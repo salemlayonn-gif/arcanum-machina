@@ -81,7 +81,7 @@ var Combat = {
 
     /* Golem attacks if alive */
     if (G.combat.golemHp > 0) {
-      var golemDmg = Math.max(1, 6 - Math.floor(enemyDef / 2) + Math.floor(Math.random() * 4));
+      var golemDmg = Math.max(2, 6 - Math.floor(enemyDef / 4) + Math.floor(Math.random() * 4));
       G.combat.enemyHp -= golemDmg;
       Combat.combatLog('Golem strikes for ' + golemDmg + '.', 'cl-hero');
     }
@@ -160,7 +160,7 @@ var Combat = {
   loseFight: function(enemy) {
     G.combat.result = 'lose';
     G.combat.active = false;
-    G.hero.hp       = 1;
+    G.hero.hp       = Math.max(1, Math.floor(getHeroMaxHp() * 0.25));
 
     Combat.combatLog('You are overwhelmed. Retreating...', 'cl-system');
     Combat.combatLog('Defeat.', 'cl-lose');

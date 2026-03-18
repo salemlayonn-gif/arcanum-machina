@@ -15,10 +15,6 @@ var Prestige = {
     return true;
   },
 
-  getNextLevel: function() {
-    return DATA.prestigeLevels[G.prestige.count]; // count is 0-indexed here
-  },
-
   getResonanceGain: function() {
     return computeResonanceGain();
   },

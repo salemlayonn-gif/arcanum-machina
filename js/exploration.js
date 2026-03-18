@@ -29,6 +29,7 @@ var Exploration = {
   cancelExplore: function() {
     if (!G.explore.active) return;
     G.explore.active = false;
+    if (G.buffs) G.buffs.exploreSpeedBonus = 0;
     addLog('Exploration cancelled.', '');
     RENDER.markDirty();
   },

@@ -168,7 +168,7 @@ function resSub(id, amount) {
 
 function canAfford(costObj) {
   for (var k in costObj) {
-    if ((G.res[k] || 0) < costObj[k]) return false;
+    if (Math.floor(G.res[k] || 0) < costObj[k]) return false;
   }
   return true;
 }
@@ -356,6 +356,10 @@ function importSave() {
 
 function saveGame() {
   try {
+    // Sync hero HP from active combat so closing mid-fight saves correctly
+    if (G.combat.active && G.combat.heroHp > 0) {
+      G.hero.hp = Math.max(1, Math.floor(G.combat.heroHp));
+    }
     var data = {
       version: G.version,
       heroName: G.heroName,
@@ -479,5 +483,6 @@ function formatTime(secs) {
 }
 
 function loreText(text) {
-  return text.replace(/\{heroName\}/g, G.heroName || 'Archivist');
+  var name = (G.heroName && G.heroName.trim()) ? G.heroName.trim() : 'Archivist';
+  return text.replace(/\{heroName\}/g, name);
 }
