@@ -11,10 +11,10 @@
   --bg:        #07070f;
   --bg2:       #0d0d1c;
   --bg3:       #111127;
-  --text:      #9ba8bf;
-  --bright:    #dde6f5;
-  --dim:       #3a4460;
-  --border:    #1a2040;
+  --text:      #ccd8ee;
+  --bright:    #f2f7ff;
+  --dim:       #7080a0;
+  --border:    #374070;
   --mana:      #7b9cff;
   --mana-dim:  #3a5299;
   --tech:      #e8a83a;
@@ -44,6 +44,7 @@ body {
   font-size: 1rem;
   line-height: 1.65;
   min-height: 100vh;
+  -webkit-text-stroke: 0.3px currentColor;
 }
 
 /* ── SCROLLBAR ─────────────────────────── */
