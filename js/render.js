@@ -220,13 +220,14 @@ var RENDER = {
       var btnClass = afford && !maxed ? 'btn btn-mana' : 'btn';
       var btnLabel = maxed ? 'MAX' : 'BUILD';
       var btnDisabled = (!afford || maxed) ? ' disabled' : '';
+      var eta = (!afford && !maxed) ? RENDER.timeToAfford(cost) : '';
 
       html += '<div class="building-row">' +
         '<div class="bld-left">' +
           '<div class="bld-name">' + bld.name + (count > 0 && !maxed ? ' <span class="text-dim">×' + count + '</span>' : '') + (maxed && bld.max === 1 ? ' <span class="text-green">✓</span>' : '') + '</div>' +
           '<div class="bld-desc">' + bld.desc + '</div>' +
         '</div>' +
-        '<div class="bld-cost">' + costStr + '</div>' +
+        '<div class="bld-cost">' + costStr + (eta ? '<div class="text-dim" style="font-size:0.76rem;margin-top:2px;">' + eta + '</div>' : '') + '</div>' +
         '<button class="' + btnClass + '"' + btnDisabled + ' onclick="buyBuilding(\'' + id + '\')">' + btnLabel + '</button>' +
       '</div>';
     });
@@ -395,7 +396,8 @@ var RENDER = {
         html += '<button class="btn btn-mana" onclick="Combat.clearResult()">[CONTINUE]</button>';
       } else {
         var fightDisabled = (G.combat.active || G.explore.active || onCooldown) ? ' disabled' : '';
-        var fightLabel = onCooldown ? '[RECOVERING...]' : '[FIGHT]';
+        var recoverLeft = onCooldown ? Math.ceil((G.combat.cooldownUntil - Date.now()) / 1000) : 0;
+        var fightLabel = onCooldown ? '[RECOVERING ' + recoverLeft + 's]' : '[FIGHT]';
         html += '<button class="btn btn-danger"' + fightDisabled + ' onclick="Combat.startFight(\'' + zid + '\')">' + fightLabel + '</button>';
       }
 
@@ -589,6 +591,22 @@ var RENDER = {
       html += '</div>';
     } else {
       html += '<div class="text-dim" style="font-size:0.86rem;padding:8px;">Craft equipment to fill your inventory.</div>';
+    }
+
+    // Golem companion info (if forge is built)
+    if ((G.buildings.golemForge || 0) >= 1) {
+      var golemMaxHp = 30 + G.hero.level * 5;
+      var golemLastHp = G.combat.golemHp > 0 ? G.combat.golemHp : golemMaxHp;
+      var golemStatus = G.combat.active ? 'IN COMBAT' : 'STANDBY';
+      html += '<div class="section-header" style="margin-top:16px;">── GOLEM COMPANION ─────────────────────────────</div>';
+      html += '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">';
+      html += '<pre class="ascii-art golem-art" style="margin:0;">' + DATA.ASCII.golem_ally + '</pre>';
+      html += '<div style="font-size:0.86rem;line-height:2;color:var(--dim);">';
+      html += '<div><span class="text-dim">Status:</span> <span class="text-tech">' + golemStatus + '</span></div>';
+      html += '<div><span class="text-dim">Max HP:</span> <span>' + golemMaxHp + '</span> <span class="text-dim">(base 30 + ' + G.hero.level * 5 + ' from level)</span></div>';
+      html += '<div><span class="text-dim">Damage:</span> <span>' + (6 + Math.floor(G.hero.level / 2)) + '–' + (6 + Math.floor(G.hero.level / 2) + 3) + '</span> <span class="text-dim">(scales with hero level)</span></div>';
+      html += '<div style="margin-top:4px;font-style:italic;color:var(--dim);font-size:0.79rem;">"Built to protect. Still remembers how."</div>';
+      html += '</div></div>';
     }
 
     html += '</div>';
@@ -858,6 +876,29 @@ var RENDER = {
       var cls   = have >= need ? 'text-dim' : 'text-red';
       return '<span class="' + cls + '">' + fmt(need) + ' ' + k + '</span>';
     }).join(' + ');
+  },
+
+  /* Returns a human-readable "time until affordable" string, or '' if unknown. */
+  timeToAfford: function(costObj) {
+    var maxSecs = 0;
+    var anyMissing = false;
+    var rateMap = {
+      mana: G.resProd.mana || 0,
+      scrap: G.resProd.scrap || 0,
+      memoryShard: G.resProd.memoryShard || 0
+    };
+    for (var k in costObj) {
+      var need = costObj[k] - Math.floor(G.res[k] || 0);
+      if (need <= 0) continue;
+      anyMissing = true;
+      var rate = rateMap[k];
+      if (!rate || rate <= 0) return ''; // resource has no passive income — can't estimate
+      var t = need / rate;
+      if (t > maxSecs) maxSecs = t;
+    }
+    if (!anyMissing || maxSecs <= 0) return '';
+    if (maxSecs > 3600) return ''; // too far out, not useful to show
+    return '~' + formatTime(maxSecs);
   }
 };
 

@@ -430,7 +430,7 @@ DATA.buildings = {
   ancientWorkshop: {
     id: 'ancientWorkshop',
     name: 'Ancient Workshop',
-    desc: 'Unlocks machine repairs. +0.5 mana/s',
+    desc: 'Unlocks machine repairs. +0.5 mana/s · +0.002 shards/s',
     flavor: '"It hummed when I touched it. Like it remembered."',
     baseCost: function(n) { return { mana: 1000, scrap: 50, arcaneCore: 20 }; },
     effects: { unlockMachines: true, manaPerSec: 0.5 },

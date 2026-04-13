@@ -43,9 +43,11 @@ var Combat = {
     G.combat.lastTurnTime= Date.now();
     G.combat.turnCount   = 0;
 
-    // Golem companion
+    // Golem companion — HP scales with hero level
     if ((G.buildings.golemForge || 0) >= 1) {
-      G.combat.golemHp    = G.combat.golemMaxHp;
+      var golemMax = 30 + G.hero.level * 5;
+      G.combat.golemMaxHp = golemMax;
+      G.combat.golemHp    = golemMax;
     } else {
       G.combat.golemHp    = 0;
     }
@@ -79,9 +81,10 @@ var Combat = {
     var critText = crit ? ' [CRITICAL!]' : '';
     Combat.combatLog(G.heroName + ' attacks for ' + heroDmg + ' damage.' + critText, 'cl-hero');
 
-    /* Golem attacks if alive */
+    /* Golem attacks if alive — scales with hero level */
     if (G.combat.golemHp > 0) {
-      var golemDmg = Math.max(2, 6 - Math.floor(enemyDef / 4) + Math.floor(Math.random() * 4));
+      var golemBase = 6 + Math.floor(G.hero.level / 2);
+      var golemDmg = Math.max(2, golemBase - Math.floor(enemyDef / 4) + Math.floor(Math.random() * 4));
       G.combat.enemyHp -= golemDmg;
       Combat.combatLog('Golem strikes for ' + golemDmg + '.', 'cl-hero');
     }
@@ -155,6 +158,12 @@ var Combat = {
 
     G.combat.cooldownUntil = Date.now() + 2000;
     if (G.buffs) G.buffs.attackBonus = 0;
+
+    /* 20% chance of combat momentum: carry +3 ATK into the next fight */
+    if (Math.random() < 0.20) {
+      G.buffs.attackBonus = 3;
+      Combat.combatLog('Combat momentum! (+3 ATK carries forward)', 'cl-loot');
+    }
   },
 
   loseFight: function(enemy) {

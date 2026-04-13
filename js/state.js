@@ -269,7 +269,10 @@ function getScrapPerSec() {
 
 function getMemoryPerSec() {
   var n = getBuildingCount('memoryTerminal');
-  return n * 0.02;
+  var base = n * 0.02;
+  // Ancient Workshop passively recovers trace memory data from the ruins
+  if (getBuildingCount('ancientWorkshop') >= 1) base += 0.002;
+  return base;
 }
 
 function getExploreTime(zoneId) {
