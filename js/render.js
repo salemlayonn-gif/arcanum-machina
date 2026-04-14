@@ -157,6 +157,37 @@ var RENDER = {
       html += RENDER.renderCrafting();
     }
 
+    // Architect Ghost NPC (prestige 2+)
+    if (G.prestige.count >= 2) {
+      var ghostIdx = Math.floor(G.playTime / 300) % DATA.ghostDialogue.length;
+      var ghostEntry = DATA.ghostDialogue[ghostIdx];
+      html += '<div class="section">';
+      html += '<div class="section-header">── ARCHITECT ECHO ──────────────────────────────</div>';
+      html += '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">';
+      html += '<pre class="ascii-art text-dim" style="margin:0;flex-shrink:0;"> &#x2248;&#x2248;&#x2248; \n[ &#x224B; ]\n &#x2248;&#x2248;&#x2248; \n   |   </pre>';
+      html += '<div>';
+      html += '<div class="text-dim" style="font-size:0.79rem;margin-bottom:6px;font-style:italic;">A resonance echo lingers near the relic.</div>';
+      var ghostCls = ghostEntry.type === 'warning' ? 'text-red' : (ghostEntry.type === 'wisdom' ? 'text-arcane' : 'text-memory');
+      html += '<div class="' + ghostCls + '" style="font-style:italic;font-size:0.86rem;line-height:1.6;">' + escapeHtml(ghostEntry.text) + '</div>';
+      html += '</div></div>';
+      html += '</div>';
+    }
+
+    // Church Scholar NPC (prestige 3+)
+    if (G.prestige.count >= 3) {
+      var scholarIdx = Math.floor(G.playTime / 420) % DATA.scholarDialogue.length;
+      var scholarEntry = DATA.scholarDialogue[scholarIdx];
+      html += '<div class="section">';
+      html += '<div class="section-header">── CHURCH SCHOLAR ──────────────────────────────</div>';
+      html += '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">';
+      html += '<pre class="ascii-art text-dim" style="margin:0;flex-shrink:0;">  o  \n /|\\ \n / \\ \n[&#x2020;&#x2020;]</pre>';
+      html += '<div>';
+      html += '<div class="text-dim" style="font-size:0.79rem;margin-bottom:6px;">A Church scholar has taken up residence near the Archive.</div>';
+      html += '<div class="text-tech" style="font-size:0.86rem;line-height:1.6;">' + escapeHtml(scholarEntry.text) + '</div>';
+      html += '</div></div>';
+      html += '</div>';
+    }
+
     return html;
   },
 
@@ -467,10 +498,39 @@ var RENDER = {
     });
     html += '</div>';
 
+    // Spells (prestige 3+, combat active)
+    if (G.prestige.count >= 3 && G.combat.active && !G.combat.result) {
+      html += '<div class="combat-spells">';
+      html += '<div class="spells-label text-dim" style="font-size:0.79rem;margin-bottom:4px;">── SPELLS ──────</div>';
+      for (var si = 0; si < Spells.list.length; si++) {
+        var sp = Spells.list[si];
+        var spCanUse = Spells.canUse(sp);
+        var spCls = spCanUse ? 'btn btn-arcane' : 'btn';
+        html += '<button class="' + spCls + '" style="font-size:0.79rem;margin-right:4px;margin-bottom:4px;"' +
+          (spCanUse ? '' : ' disabled') +
+          ' onclick="Spells.useSpell(\'' + sp.id + '\')" title="' + sp.desc + '">' +
+          '[' + sp.name + ' · ' + sp.manaCost + ' mana]</button>';
+      }
+      if (G.buffs && G.buffs.shieldActive) {
+        html += '<div class="text-arcane" style="font-size:0.82rem;margin-top:2px;">◈ Shield active</div>';
+      }
+      if (G.buffs && G.buffs.enemyStunned) {
+        html += '<div class="text-gold" style="font-size:0.82rem;margin-top:2px;">&#9889; Enemy stunned</div>';
+      }
+      html += '</div>';
+    }
+
     // Controls
     html += '<div class="combat-controls">';
     if (G.combat.active) {
       html += '<button class="btn btn-danger" onclick="Combat.flee()">[FLEE]</button>';
+      /* Golem repair button (prestige 5+, golem down) */
+      if (G.prestige.count >= 5 && G.combat.golemHp === 0 && (G.buildings.golemForge || 0) >= 1) {
+        var canRepair = Math.floor(G.res.scrap || 0) >= 5 && Math.floor(G.res.etherCell || 0) >= 1;
+        html += '<button class="btn' + (canRepair ? ' btn-tech' : '') + '"' +
+          (canRepair ? '' : ' disabled') +
+          ' onclick="Combat.repairGolem()">[REPAIR GOLEM (5 scrap + 1 ether)]</button>';
+      }
     } else if (G.combat.result === 'win') {
       html += '<button class="btn btn-mana" onclick="Combat.clearResult()">[CONTINUE]</button>';
     } else if (G.combat.result === 'lose' || G.combat.result === 'flee') {
@@ -882,11 +942,29 @@ var RENDER = {
   timeToAfford: function(costObj) {
     var maxSecs = 0;
     var anyMissing = false;
+    /* Base passive rates */
     var rateMap = {
       mana: G.resProd.mana || 0,
       scrap: G.resProd.scrap || 0,
-      memoryShard: G.resProd.memoryShard || 0
+      memoryShard: G.resProd.memoryShard || 0,
+      arcaneCore: 0,
+      etherCell: 0
     };
+    /* Estimate arcaneCore / etherCell rates from active crafting slots */
+    var slotNames = ['slot0', 'slot1'];
+    for (var s = 0; s < slotNames.length; s++) {
+      var slot = G.crafting[slotNames[s]];
+      if (!slot) continue;
+      var recipe = DATA.recipes[slot.recipeId];
+      if (!recipe || !recipe.output || !recipe.output.resource) continue;
+      var timeLeftMs = slot.endTime - Date.now();
+      if (timeLeftMs <= 0) continue;
+      var timeLeftSecs = timeLeftMs / 1000;
+      var outResource = recipe.output.resource;
+      if (outResource === 'arcaneCore' || outResource === 'etherCell') {
+        rateMap[outResource] += recipe.output.amount / timeLeftSecs;
+      }
+    }
     for (var k in costObj) {
       var need = costObj[k] - Math.floor(G.res[k] || 0);
       if (need <= 0) continue;

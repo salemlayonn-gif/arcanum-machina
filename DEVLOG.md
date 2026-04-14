@@ -37,6 +37,66 @@
 ---
 
 ### Known issues still pending (future sessions)
-- Prestige levels 3–6 reference features not implemented (spells, NPCs, Architect Mode, golem repair)
-- No "time to afford" for resources with no passive production (arcaneCore, etherCell)
+- ~~Prestige levels 3–6 reference features not implemented (spells, NPCs, Architect Mode, golem repair)~~ — resolved 2026-04-14
+- ~~No "time to afford" for resources with no passive production (arcaneCore, etherCell)~~ — resolved 2026-04-14
 - Consumable item `scoutsCompass` applies buff before explore starts — this is correct but may confuse players
+
+---
+
+## Design Decisions — 2026-04-14 (autonomous session)
+
+### Changes implemented this session
+
+#### 1. `js/render.js` — Time-to-afford for arcaneCore and etherCell
+- `timeToAfford()` now estimates output/s for arcaneCore and etherCell from active crafting slots.
+- Checks `G.crafting.slot0` and `G.crafting.slot1`; if a slot is actively crafting one of these resources, computes `recipe.output.amount / timeLeftSeconds` and adds it to the rate map.
+- This means buildings that cost arcaneCore or etherCell will now show an ETA if a craft is in progress.
+- Only works for the current craft in-progress (no chain-craft estimation). Acceptable for v1.
+
+#### 2. `js/state.js` — New buff fields + veritasHint
+- Added `shieldActive: false` and `enemyStunned: false` to `G.buffs`.
+- Added `G.veritasHint: { lastTime: 0, count: 0 }` to G root.
+- `loadGame()` now merges saved `veritasHint` data and resets buffs with new fields included.
+- `resetForPrestige()` resets all new fields.
+- `saveGame()` now serializes `veritasHint`.
+
+#### 3. `js/combat.js` — Spells system (prestige 3+)
+- Added global `Spells` object with 3 spells: Mana Bolt, Arcane Shield, Ley Pulse.
+- Added `Combat.repairGolem()` for prestige 5+ — restores golem to 40% max HP for 5 scrap + 1 etherCell.
+- Shield/stun buffs reset on win, lose, and flee.
+- **Spell balance (flag for Robert's review):**
+  - Mana Bolt: 30 mana → 20–35 damage. Mid-range single strike. At 30 mana cost, meaningful but not spammable. Could be too weak vs. high-HP enemies if mana pool is large.
+  - Arcane Shield: 50 mana → absorbs one enemy hit entirely (hero side). Golem still takes partial damage from the shielded hit.
+  - Ley Pulse: 80 mana → negates entire enemy turn. At 80 mana, this is a premium defensive option. Could be overpowered vs. high-ATK enemies in deep vault.
+  - These numbers are guesses. Robert should test and tune.
+
+#### 4. `js/data.js` — NPC dialogue
+- Added `DATA.ghostDialogue` — 12 entries from Caldris, a First Age Architect remnant consciousness. Voice: melancholic, intellectual, occasionally dry. Types: memory / wisdom / warning.
+- Added `DATA.scholarDialogue` — 10 entries from an unnamed Church Scholar. Dramatic irony: she interprets technical Architect reality through sincere theological lens. Voice: warm, reverent, earnest.
+- Dialogue cycles by game time (ghost: every 5 min / scholar: every 7 min). No randomization — deterministic cycling means players see all entries over time.
+
+#### 5. `js/render.js` — Ghost + Scholar NPC sections in screenArchive
+- Ghost section appears at prestige 2+ at the bottom of the Archive screen after crafting.
+- Scholar section appears at prestige 3+ after the Ghost section.
+- Ghost has a simple `[ ≋ ]` ASCII figure; Scholar has a simple humanoid figure with a dagger symbol.
+- Ghost dialogue uses `text-memory` (blue) for memory type, `text-arcane` (purple) for wisdom, `text-red` for warning.
+- Scholar dialogue uses `text-tech` (amber/teal).
+
+#### 6. `js/data.js` + `js/engine.js` — VERITAS Hint System (prestige 4+)
+- Added `DATA.veritasHints` — 12 entries. 5 have resource bonuses (mana or memoryShard).
+- `Engine.checkVeritasHints()` fires every 3 real-time minutes of play, logs as `log-lore` class (purple).
+- Bonuses range from 50–100 mana or 50–60 memory shards. **Flag for Robert's review** — could be too generous or too stingy depending on late-game economy.
+- Hint timing of 3 min was chosen to feel meaningful without spamming. Could increase to 5 min if it feels too frequent.
+
+#### 7. `js/combat.js` + `js/render.js` — Golem Repair (prestige 5+)
+- `Combat.repairGolem()` restores golem to 40% max HP for 5 scrap + 1 etherCell.
+- Repair button shows in combat-controls only when: prestige >= 5, combat active, golem HP = 0, golemForge built.
+- **Cost flag for Robert's review** — 5 scrap + 1 etherCell is intentionally cheap to not make the golem feel useless once it falls. Could be raised if golem repair is too easy to spam.
+- 40% HP restoration is a meaningful but not full heal.
+
+### What was NOT implemented (needs Robert's input)
+- **New zones:** "Cathedral of First Light" referenced in prestige 3 bonuses — needs enemies, lore, ASCII art, unlock conditions, relic pool.
+- **Architect Mode (New Game+):** referenced in prestige 6 bonuses — no design yet.
+- **VERITAS partial transmission:** referenced in prestige 5 bonuses — unclear what mechanic this means.
+- **Memory Shards decode 2x faster:** referenced in prestige 4 bonuses — no mechanic for "decoding" currently exists.
+- **Broken golems dropping Memory Shards:** referenced in prestige 2 bonuses — not implemented; would require combat loot changes for golem-type enemies.

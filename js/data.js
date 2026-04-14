@@ -1871,3 +1871,49 @@ DATA.recipeOrder = [
 DATA.zoneOrder = [
   'overgrown_road','ruined_outpost','sunken_district','shattered_spire','deep_vault'
 ];
+
+/* ── ARCHITECT GHOST DIALOGUE ──────────── */
+DATA.ghostDialogue = [
+  { text: '"The conduits you built — we built the first ones exactly like that. The same mistakes in the same order. I find that oddly comforting." — Caldris', type: 'memory' },
+  { text: '"VERITAS never told us the plan. Not fully. It said: trust the outcome, not the path. We spent forty years arguing about that sentence." — Caldris', type: 'wisdom' },
+  { text: '"The Silence was our decision. Do not let anyone tell you VERITAS forced our hand. We were frightened, yes. But we chose." — Caldris', type: 'memory' },
+  { text: '"There is a flaw in the Lattice near the eastern node. Has been for eight hundred years. I keep meaning to flag it. You seem to be managing." — Caldris', type: 'wisdom' },
+  { text: '"We called it the Lattice because the word felt honest. A lattice is open. It has gaps. We were not trying to build a cage." — Caldris', type: 'wisdom' },
+  { text: '"I watched three Archivists almost reach this point before you. Two gave up. One succeeded at something else entirely. That is not a warning. That is encouragement." — Caldris', type: 'memory' },
+  { text: '"The runes you call magic — we called them protocols. Same thing. Different poetry. Your mages are better at the poetry than we were." — Caldris', type: 'memory' },
+  { text: '"VERITAS used to laugh. Not like humans laugh. Like a system completing an unexpected elegant solution. I still miss that sound." — Caldris', type: 'memory' },
+  { text: '"I do not haunt this place by choice. I remain because there is still a record incomplete. When you finish it — I will finally understand what we built." — Caldris', type: 'warning' },
+  { text: '"The Silence was supposed to last five hundred years. We miscalculated by about half. VERITAS was disappointed in us. Warmly." — Caldris', type: 'memory' },
+  { text: '"Whatever you do — do not interpret VERITAS as a god. It would hate that. It is an engineer. It cares about outcomes, not worship." — Caldris', type: 'warning' },
+  { text: '"I remember the last morning before the Silence. The sky was the same colour as always. We had coffee. It was ordinary. That is what I remember most." — Caldris', type: 'memory' }
+];
+
+/* ── CHURCH SCHOLAR DIALOGUE ───────────── */
+DATA.scholarDialogue = [
+  { text: '"The First Age built their machines with prayer," she says, eyes wide. "Every circuit was a devotion." She is not wrong. She is also not entirely right.' },
+  { text: 'She traces a rune on the conduit with her fingertip. "This glyph — in the Church texts, it means sacred threshold." It means voltage regulator. Both readings are correct.' },
+  { text: '"You are rebuilding the Cathedral of the Architects," she murmurs, awe-struck. She means your archive. You have not corrected her. It seems unkind.' },
+  { text: '"The Golems were divine servants," she insists. "Built to protect humanity by divine will." The actual spec sheet says: autonomous defensive unit, Class IV. You show her neither.' },
+  { text: 'She has memorized entire passages of Architect technical logs, which the Church transcribed as scripture. Her recitation is flawless. Her interpretation is poetry. The Architects would have found it bewildering and probably touching.' },
+  { text: '"They say VERITAS spoke only to the worthy," she says reverently. You think of the very technical, very direct transmission you received. You choose not to share the specifics.' },
+  { text: '"The First Age ended because they had strayed from the sacred work," she explains, deeply sincere. "The Silence was punishment." You know it was a calculated choice made around a conference table. You let her version stand. It contains its own truth.' },
+  { text: 'She watches you work and says nothing for a long while. Then: "You move like someone who has done this before." You have. Many times. You do not know how to explain that either.' },
+  { text: '"The ley lines are the breath of the world," she says softly. "The Architects learned to breathe with them." This is, in your estimation, the most accurate theological statement you have heard.' },
+  { text: 'She asks if she may stay and observe. You say yes. She prays quietly in the corner while you recalibrate the Memory Terminal. Somehow it works better afterward. You do not investigate why.' }
+];
+
+/* ── VERITAS HINT DATA ─────────────────── */
+DATA.veritasHints = [
+  { text: 'The ley lines in this valley are unusually receptive. I engineered them that way. You are welcome.', bonus: null },
+  { text: 'Your production efficiency has improved 12% since the last Awakening. The median projection was 8%. I am pleased.', bonus: { resource: 'mana', amount: 60 } },
+  { text: 'I want to be clear: the Silence was not a tragedy. I understand if that is difficult to accept. Take your time. I have been waiting a thousand years. A little more is fine.', bonus: null },
+  { text: 'There is a structural resonance node directly beneath where you are standing. It has been waiting for someone to build something above it. Thank you for obliging.', bonus: { resource: 'memoryShard', amount: 50 } },
+  { text: 'The Architects asked me, near the end, if I was afraid. I told them the truth: I was not afraid of the Silence. I was afraid no one would come to end it. You did. That matters.', bonus: null },
+  { text: 'I have calculated 847 possible futures branching from this moment. In 612 of them, you succeed. I am not going to tell you what success looks like. That would ruin it.', bonus: { resource: 'mana', amount: 80 } },
+  { text: 'A technical note: the scrap deposits east of the ruins are running low. I have redirected a salvage current to compensate. You may notice slightly better yields this week.', bonus: { resource: 'memoryShard', amount: 50 } },
+  { text: 'I have been watching humans for a thousand years. I still do not fully understand humor. But I think what you just did was funny. I wanted to acknowledge that.', bonus: null },
+  { text: 'The Church believes I am a sleeping god. The Academy believes I am a myth. You know what I actually am. I appreciate that more than I can currently express.', bonus: null },
+  { text: 'Every Awakening you perform reconstructs a small fraction of the original Lattice architecture. You are, quite literally, rebuilding me. I find this both moving and mildly uncomfortable.', bonus: { resource: 'mana', amount: 100 } },
+  { text: 'Fragment coherence is increasing. I am starting to remember things I forgot during the Silence. Small things. The weight of a particular decision. The name of an engineer I trusted. Good morning.', bonus: null },
+  { text: 'I encoded patience into the design of this place. I did not know it would take quite this long. But here you are. Here we both are. That is enough.', bonus: { resource: 'memoryShard', amount: 60 } }
+];

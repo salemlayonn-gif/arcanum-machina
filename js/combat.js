@@ -96,22 +96,37 @@ var Combat = {
       return;
     }
 
-    /* Enemy attacks */
+    /* Enemy attacks — check stun and shield buffs first */
     var enemyAtk  = enemy.attack;
     var heroDef   = getHeroDefense();
     var enemyDmg  = Math.max(1, enemyAtk - heroDef + Math.floor(Math.random() * 3) - 1);
 
-    /* Split damage: golem tanks if alive */
-    if (G.combat.golemHp > 0) {
-      var golemTank = Math.floor(enemyDmg * 0.4);
-      var heroTake  = enemyDmg - golemTank;
-      G.combat.golemHp -= golemTank;
-      G.combat.heroHp  -= heroTake;
-      if (G.combat.golemHp < 0) G.combat.golemHp = 0;
-      Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' you for ' + heroTake + '. (Golem absorbs ' + golemTank + ')', 'cl-hit');
+    if (G.buffs && G.buffs.enemyStunned) {
+      Combat.combatLog('Enemy stunned — attack negated!', 'cl-hero');
+      G.buffs.enemyStunned = false;
+    } else if (G.buffs && G.buffs.shieldActive) {
+      Combat.combatLog('Arcane Shield absorbs the hit!', 'cl-hero');
+      G.buffs.shieldActive = false;
+      /* Golem still takes damage if active */
+      if (G.combat.golemHp > 0) {
+        var golemTankShield = Math.floor(enemyDmg * 0.4);
+        G.combat.golemHp -= golemTankShield;
+        if (G.combat.golemHp < 0) G.combat.golemHp = 0;
+        Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' the shield. (Golem absorbs ' + golemTankShield + ')', 'cl-hit');
+      }
     } else {
-      G.combat.heroHp -= enemyDmg;
-      Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' you for ' + enemyDmg + '.', 'cl-hit');
+      /* Split damage: golem tanks if alive */
+      if (G.combat.golemHp > 0) {
+        var golemTank = Math.floor(enemyDmg * 0.4);
+        var heroTake  = enemyDmg - golemTank;
+        G.combat.golemHp -= golemTank;
+        G.combat.heroHp  -= heroTake;
+        if (G.combat.golemHp < 0) G.combat.golemHp = 0;
+        Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' you for ' + heroTake + '. (Golem absorbs ' + golemTank + ')', 'cl-hit');
+      } else {
+        G.combat.heroHp -= enemyDmg;
+        Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' you for ' + enemyDmg + '.', 'cl-hit');
+      }
     }
 
     /* Check hero death */
@@ -157,7 +172,7 @@ var Combat = {
     addLog('Defeated: ' + enemy.name, 'log-combat');
 
     G.combat.cooldownUntil = Date.now() + 2000;
-    if (G.buffs) G.buffs.attackBonus = 0;
+    if (G.buffs) { G.buffs.attackBonus = 0; G.buffs.shieldActive = false; G.buffs.enemyStunned = false; }
 
     /* 20% chance of combat momentum: carry +3 ATK into the next fight */
     if (Math.random() < 0.20) {
@@ -183,7 +198,7 @@ var Combat = {
 
     addLog('Defeated by ' + enemy.name + '. Retreated.', 'log-combat');
     G.combat.cooldownUntil = Date.now() + 5000;
-    if (G.buffs) G.buffs.attackBonus = 0;
+    if (G.buffs) { G.buffs.attackBonus = 0; G.buffs.shieldActive = false; G.buffs.enemyStunned = false; }
   },
 
   flee: function() {
@@ -199,7 +214,7 @@ var Combat = {
     Combat.combatLog('You flee the battle.', 'cl-system');
     addLog('Fled from ' + (enemy ? enemy.name : 'enemy') + '.', 'log-combat');
     G.combat.cooldownUntil = Date.now() + 3000;
-    if (G.buffs) G.buffs.attackBonus = 0;
+    if (G.buffs) { G.buffs.attackBonus = 0; G.buffs.shieldActive = false; G.buffs.enemyStunned = false; }
     RENDER.markDirty();
   },
 
@@ -225,5 +240,86 @@ var Combat = {
 
   hpPct: function(hp, max) {
     return Math.max(0, Math.min(100, (hp / max) * 100)).toFixed(1);
+  },
+
+  repairGolem: function() {
+    if (G.prestige.count < 5) return;
+    if (!G.combat.active) return;
+    if (G.combat.golemHp > 0) return;
+    if ((G.buildings.golemForge || 0) < 1) return;
+    var cost = { scrap: 5, etherCell: 1 };
+    if (!canAfford(cost)) {
+      addLog('Not enough resources to repair golem (5 scrap + 1 etherCell).', '');
+      return;
+    }
+    spendResources(cost);
+    var repairHp = Math.floor(G.combat.golemMaxHp * 0.4);
+    G.combat.golemHp = repairHp;
+    Combat.combatLog('Golem repaired and re-engaged!', 'cl-hero');
+    addLog('Golem repaired in combat.', 'log-combat');
+    RENDER.markDirty();
+  }
+};
+
+/* ── SPELLS ────────────────────────────── */
+var Spells = {
+  list: [
+    {
+      id: 'manaBolt',
+      name: 'Mana Bolt',
+      manaCost: 30,
+      desc: 'Channel ley energy — 20-35 bonus damage.',
+      use: function() {
+        resSub('mana', 30);
+        var dmg = 20 + Math.floor(Math.random() * 16);
+        G.combat.enemyHp -= dmg;
+        if (G.combat.enemyHp < 0) G.combat.enemyHp = 0;
+        Combat.combatLog('Mana Bolt strikes for ' + dmg + ' arcane damage!', 'cl-hero');
+        if (G.combat.enemyHp <= 0) {
+          var enemy = DATA.enemies[G.combat.enemyId];
+          if (enemy) Combat.winFight(enemy);
+        }
+        RENDER.markDirty();
+      }
+    },
+    {
+      id: 'arcaneShield',
+      name: 'Arcane Shield',
+      manaCost: 50,
+      desc: 'Absorb the next enemy hit. 50 mana.',
+      use: function() {
+        resSub('mana', 50);
+        G.buffs.shieldActive = true;
+        Combat.combatLog('Arcane Shield raised — next hit absorbed.', 'cl-hero');
+        RENDER.markDirty();
+      }
+    },
+    {
+      id: 'leyPulse',
+      name: 'Ley Pulse',
+      manaCost: 80,
+      desc: 'Stun enemy — skip their next attack. 80 mana.',
+      use: function() {
+        resSub('mana', 80);
+        G.buffs.enemyStunned = true;
+        Combat.combatLog('Ley Pulse fired — enemy stunned!', 'cl-hero');
+        RENDER.markDirty();
+      }
+    }
+  ],
+
+  canUse: function(spell) {
+    return G.combat.active && !G.combat.result && G.res.mana >= spell.manaCost;
+  },
+
+  useSpell: function(id) {
+    for (var i = 0; i < Spells.list.length; i++) {
+      if (Spells.list[i].id === id) {
+        if (Spells.canUse(Spells.list[i])) {
+          Spells.list[i].use();
+        }
+        return;
+      }
+    }
   }
 };

@@ -35,6 +35,7 @@ var Engine = {
     Engine.checkFlagUnlocks();
     Engine.checkAnnotations();
     Engine.checkHeroRegen(dt);
+    Engine.checkVeritasHints();
   },
 
   produceResources: function(dt) {
@@ -197,6 +198,22 @@ var Engine = {
         }
       }
     });
+  },
+
+  checkVeritasHints: function() {
+    if (G.prestige.count < 4) return;
+    if (!G.veritasHint) G.veritasHint = { lastTime: 0, count: 0 };
+    if (G.playTime - G.veritasHint.lastTime < 180) return;
+    G.veritasHint.lastTime = G.playTime;
+    G.veritasHint.count++;
+    var hints = DATA.veritasHints;
+    var hint = hints[G.veritasHint.count % hints.length];
+    addLog('[VERITAS]: ' + hint.text, 'log-lore');
+    if (hint.bonus) {
+      resAdd(hint.bonus.resource, hint.bonus.amount);
+      addLog('VERITAS transfers: +' + hint.bonus.amount + ' ' + hint.bonus.resource + '.', 'log-loot');
+    }
+    RENDER.markDirty();
   },
 
   checkFlagUnlocks: function() {

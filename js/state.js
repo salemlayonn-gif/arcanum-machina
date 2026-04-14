@@ -143,8 +143,13 @@ var G = {
   /* Temporary buffs */
   buffs: {
     attackBonus: 0,
-    exploreSpeedBonus: 0
+    exploreSpeedBonus: 0,
+    shieldActive: false,
+    enemyStunned: false
   },
+
+  /* VERITAS hint tracking */
+  veritasHint: { lastTime: 0, count: 0 },
 
   /* Relics found */
   relics: [],
@@ -379,6 +384,7 @@ function saveGame() {
       relics: G.relics,
       annotations: G.annotations,
       exploreVisited: G.explore.visited || [],
+      veritasHint: G.veritasHint,
       savedAt: Date.now()
     };
     localStorage.setItem('arcanum_machina_save', JSON.stringify(data));
@@ -405,7 +411,8 @@ function loadGame() {
     G.loreUnlocked = data.loreUnlocked || [];
     G.prestige  = Object.assign({count:0,resonance:0,totalEarned:0,multiplier:1.0}, data.prestige);
     G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false}, data.flags);
-    G.buffs = { attackBonus: 0, exploreSpeedBonus: 0 };
+    G.buffs = Object.assign({ attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false }, {});
+    G.veritasHint = Object.assign({ lastTime: 0, count: 0 }, data.veritasHint || {});
     G.relics      = data.relics      || [];
     G.relicsNew   = [];
     G.annotations = data.annotations || [];
@@ -458,7 +465,8 @@ function resetForPrestige() {
   G.flags     = keep.flags;
   G.gameLog   = [];
   G.ui.screen = 'archive';
-  G.buffs = { attackBonus: 0, exploreSpeedBonus: 0 };
+  G.buffs = { attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false };
+  G.veritasHint = { lastTime: 0, count: 0 };
   G.relics      = keep.relics;
   G.relicsNew   = [];
   G.annotations = keep.annotations;
