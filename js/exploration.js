@@ -104,10 +104,15 @@ var Crafting = {
     }
 
     spendResources(recipe.cost);
+    var craftTime = recipe.time;
+    /* Prestige 4: recipes using Memory Shards decode 2x faster */
+    if (G.prestige.count >= 4 && recipe.cost.memoryShard) {
+      craftTime = Math.floor(craftTime / 2);
+    }
     G.crafting[slot] = {
       recipeId:  recipeId,
       startTime: Date.now(),
-      endTime:   Date.now() + recipe.time
+      endTime:   Date.now() + craftTime
     };
     addLog('Started crafting: ' + recipe.name + '.', '');
     RENDER.markDirty();

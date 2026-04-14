@@ -163,6 +163,12 @@ var Combat = {
       Combat.combatLog('No loot.', 'cl-system');
     }
 
+    /* Prestige 2: broken golems occasionally drop Memory Shards */
+    if (enemy.golemType && G.prestige.count >= 2 && Math.random() < 0.18) {
+      resAdd('memoryShard', 1);
+      Combat.combatLog('Salvaged a Memory Shard from the broken golem.', 'cl-loot');
+    }
+
     /* EXP */
     grantExp(enemy.exp);
     Combat.combatLog('Gained ' + enemy.exp + ' EXP.', 'cl-loot');

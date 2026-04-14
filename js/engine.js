@@ -36,6 +36,7 @@ var Engine = {
     Engine.checkAnnotations();
     Engine.checkHeroRegen(dt);
     Engine.checkVeritasHints();
+    Engine.checkVeritasTransmission();
   },
 
   produceResources: function(dt) {
@@ -213,6 +214,23 @@ var Engine = {
       resAdd(hint.bonus.resource, hint.bonus.amount);
       addLog('VERITAS transfers: +' + hint.bonus.amount + ' ' + hint.bonus.resource + '.', 'log-loot');
     }
+    RENDER.markDirty();
+  },
+
+  checkVeritasTransmission: function() {
+    if (G.prestige.count < 5) return;
+    if (!G.veritasTransmission) G.veritasTransmission = { lastTime: 0, count: 0 };
+    if (G.playTime - G.veritasTransmission.lastTime < 600) return; // every 10 min
+    G.veritasTransmission.lastTime = G.playTime;
+    G.veritasTransmission.count++;
+    var transmissions = DATA.veritasTransmissions;
+    var t = transmissions[G.veritasTransmission.count % transmissions.length];
+    addLog('[VERITAS — PARTIAL TRANSMISSION]: ' + t.text, 'log-lore');
+    if (t.bonus) {
+      resAdd(t.bonus.resource, t.bonus.amount);
+      addLog('VERITAS transfers: +' + t.bonus.amount + ' ' + t.bonus.resource + '.', 'log-loot');
+    }
+    showNotification('◆ VERITAS Partial Transmission received', 'notif-lore', 6000);
     RENDER.markDirty();
   },
 

@@ -151,6 +151,9 @@ var G = {
   /* VERITAS hint tracking */
   veritasHint: { lastTime: 0, count: 0 },
 
+  /* VERITAS partial transmission tracking (prestige 5+) */
+  veritasTransmission: { lastTime: 0, count: 0 },
+
   /* Relics found */
   relics: [],
   relicsNew: [],
@@ -385,6 +388,7 @@ function saveGame() {
       annotations: G.annotations,
       exploreVisited: G.explore.visited || [],
       veritasHint: G.veritasHint,
+      veritasTransmission: G.veritasTransmission,
       savedAt: Date.now()
     };
     localStorage.setItem('arcanum_machina_save', JSON.stringify(data));
@@ -413,6 +417,7 @@ function loadGame() {
     G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false}, data.flags);
     G.buffs = Object.assign({ attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false }, {});
     G.veritasHint = Object.assign({ lastTime: 0, count: 0 }, data.veritasHint || {});
+    G.veritasTransmission = Object.assign({ lastTime: 0, count: 0 }, data.veritasTransmission || {});
     G.relics      = data.relics      || [];
     G.relicsNew   = [];
     G.annotations = data.annotations || [];
@@ -467,6 +472,7 @@ function resetForPrestige() {
   G.ui.screen = 'archive';
   G.buffs = { attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false };
   G.veritasHint = { lastTime: 0, count: 0 };
+  G.veritasTransmission = { lastTime: 0, count: 0 };
   G.relics      = keep.relics;
   G.relicsNew   = [];
   G.annotations = keep.annotations;

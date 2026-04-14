@@ -97,6 +97,35 @@
 ### What was NOT implemented (needs Robert's input)
 - **New zones:** "Cathedral of First Light" referenced in prestige 3 bonuses — needs enemies, lore, ASCII art, unlock conditions, relic pool.
 - **Architect Mode (New Game+):** referenced in prestige 6 bonuses — no design yet.
-- **VERITAS partial transmission:** referenced in prestige 5 bonuses — unclear what mechanic this means.
-- **Memory Shards decode 2x faster:** referenced in prestige 4 bonuses — no mechanic for "decoding" currently exists.
-- **Broken golems dropping Memory Shards:** referenced in prestige 2 bonuses — not implemented; would require combat loot changes for golem-type enemies.
+
+---
+
+## Session 2026-04-14 (continuation) — Prestige bonuses implementation
+
+### Changes implemented this session
+
+#### 1. `js/data.js` — golemType flag on early enemies
+- Added `golemType: true` to `rusted_guardian` and `scrap_crawler` (ruined_outpost zone).
+- These are the "broken golems" referenced in prestige 2 bonuses — early-zone mechanical enemies with no prior shard drop.
+
+#### 2. `js/combat.js` — Broken golems drop Memory Shards (prestige 2+)
+- In `winFight()`, after regular loot: if `enemy.golemType && prestige >= 2`, 18% chance to drop 1 Memory Shard.
+- Combat log: "Salvaged a Memory Shard from the broken golem."
+- The high-tier golem enemies (care_golem, vault_automaton, etc.) already drop shards in their regular loot table, so this only adds value for the prestige 2 early-zone experience.
+
+#### 3. `js/exploration.js` — Memory Shards decode 2x faster (prestige 4+)
+- In `startCraft()`, if `prestige >= 4` and `recipe.cost.memoryShard` exists, `craftTime` is halved before setting `endTime`.
+- "Decoding" = understanding the Shard data well enough to accelerate any recipe that requires it. Semantically consistent with the lore.
+- No UI change needed — the progress bar just fills faster.
+
+#### 4. `js/data.js` + `js/engine.js` + `js/state.js` — VERITAS Partial Transmission (prestige 5+)
+- Added `DATA.veritasTransmissions` — 8 longer, more coherent VERITAS messages at increasing coherence levels (34%→67%).
+  - 5 of 8 carry bonuses: 300–500 mana or 8–12 Memory Shards. Larger than regular hints — befitting prestige 5 late game.
+  - Narrative voice: VERITAS speaking more fully — confessions, explanations, expressions of something like emotion.
+- Added `G.veritasTransmission: { lastTime: 0, count: 0 }` to state (with save/load/prestige-reset).
+- `Engine.checkVeritasTransmission()`: fires every 10 real-time minutes at prestige 5+. Uses `log-lore` class (purple) like hints. Shows a distinct notification: "◆ VERITAS Partial Transmission received."
+- Regular hint interval (3 min) is unchanged — transmissions are a separate, less frequent but more impactful channel.
+
+### What still needs Robert's input
+- **New zones:** "Cathedral of First Light" — needs enemies, lore, ASCII art, unlock conditions, relic pool.
+- **Architect Mode (New Game+):** prestige 6 bonus — no design yet.
