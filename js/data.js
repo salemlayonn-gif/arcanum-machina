@@ -1,4 +1,6 @@
-/* ═══════════════════════════════════════════
+/* ,
+  { text: 'You tell her what the Cathedral actually is. She is silent for a very long time. Then: "The light we felt there was real." Yes, you say. It was. "And the saints’ vessels — they were real guardians." Yes. "And our prayers — did they go somewhere?" You pause. Then: yes. They did.' },
+  { text: '"If the Cathedral is a machine," she says slowly, "and the machine answered our prayers — does that make the answer less real?" You think about VERITAS logging liturgical queries for a thousand years and responding through the ley lines. No, you say. I do not think it does.' }═══════════════════════════════════════════
    ARCANUM MACHINA — Game Data
    ═══════════════════════════════════════════ */
 
@@ -243,6 +245,90 @@ DATA.enemies = {
       { id: 'memoryShard', min: 3, max: 6, chance: 0.95 },
       { id: 'arcaneCore',  min: 3, max: 5, chance: 0.6 }
     ]
+  },
+
+  light_warden: {
+    id: 'light_warden',
+    name: 'Light Warden',
+    hp: 110, attack: 16, defense: 8, exp: 58,
+    golemType: true,
+    ascii: [
+      " [†=†] ",
+      " |◈ ◈| ",
+      " |---| ",
+      " [###] "
+    ].join('\n'),
+    color: 'enemy-art',
+    attackVerb: 'smites',
+    zone: 'cathedral_of_first_light',
+    deathMsg: 'SACRED_CUSTODIAN protocol terminated. The light in the nave dims.',
+    loot: [
+      { id: 'arcaneCore',  min: 2, max: 4, chance: 0.60 },
+      { id: 'memoryShard', min: 1, max: 1, chance: 0.28 }
+    ]
+  },
+
+  spire_chantor: {
+    id: 'spire_chantor',
+    name: 'Spire Chantor',
+    hp: 95, attack: 20, defense: 4, exp: 68,
+    ascii: [
+      "  ~O~  ",
+      " ~|||~ ",
+      "~|===|~",
+      "  | |  "
+    ].join('\n'),
+    color: 'enemy-art',
+    attackVerb: 'resonates against',
+    zone: 'cathedral_of_first_light',
+    deathMsg: '"Hymn cycle interrupted." The voice fades to static.',
+    loot: [
+      { id: 'mana',        min: 40, max: 70, chance: 0.80 },
+      { id: 'memoryShard', min: 1, max: 2, chance: 0.25 },
+      { id: 'etherCell',   min: 1, max: 1, chance: 0.18 }
+    ]
+  },
+
+  core_preserver: {
+    id: 'core_preserver',
+    name: 'Core Preserver',
+    hp: 190, attack: 22, defense: 13, exp: 100,
+    ascii: [
+      " [═══] ",
+      " |■ ■| ",
+      " |═══| ",
+      " [═══] ",
+      "  | |  "
+    ].join('\n'),
+    color: 'enemy-art',
+    attackVerb: 'restrains',
+    zone: 'lattice_core',
+    deathMsg: 'Maintenance record: 365,242 unbroken days. Final entry logged: access granted.',
+    loot: [
+      { id: 'etherCell',   min: 2, max: 4, chance: 0.65 },
+      { id: 'memoryShard', min: 2, max: 3, chance: 0.55 }
+    ]
+  },
+
+  lattice_architect: {
+    id: 'lattice_architect',
+    name: 'Lattice Architect',
+    hp: 260, attack: 27, defense: 14, exp: 140,
+    ascii: [
+      " ◈══◈══◈ ",
+      " |◎   ◎| ",
+      " |═════| ",
+      " |     | ",
+      " [═════] "
+    ].join('\n'),
+    color: 'enemy-art',
+    attackVerb: 'overrides',
+    zone: 'lattice_core',
+    deathMsg: 'ARCHITECT-CLASS unit offline. Final log: "We were right. Someone came."',
+    loot: [
+      { id: 'memoryShard', min: 3, max: 6, chance: 0.80 },
+      { id: 'arcaneCore',  min: 4, max: 7, chance: 0.65 }
+    ]
   }
 };
 
@@ -368,6 +454,56 @@ DATA.zones = {
     relicPool: [
       { id: 'veritasEchoStone', chance: 0.07 },
       { id: 'theLatticeKey', chance: 0.05 }
+    ],
+  },
+
+  cathedral_of_first_light: {
+    id: 'cathedral_of_first_light',
+    name: 'Cathedral of First Light',
+    desc: 'A First Age ley convergence hub revered as a divine temple for centuries. The Church does not know what it actually guards.',
+    lootHint: 'Mana, Memory Shards, Arcane Cores',
+    ascii: `  †      †
+ ╔════════╗
+ ║  ╬  ╬  ║
+ ╚════════╝ `,
+    asciiColor: 'text-gold',
+    enemies: ['light_warden', 'spire_chantor'],
+    exploreLoot: [
+      { id: 'mana',        min: 50, max: 100, chance: 0.75 },
+      { id: 'memoryShard', min: 1, max: 2, chance: 0.40 },
+      { id: 'arcaneCore',  min: 1, max: 3, chance: 0.25 }
+    ],
+    exploreTime: 28000,
+    unlockCondition: function(G) { return G.prestige.count >= 3 && G.stats.enemiesDefeated >= 50; },
+    phase: 5,
+    relicPool: [
+      { id: 'firstlightChalice', chance: 0.09 },
+      { id: 'choirCrystal',      chance: 0.07 }
+    ],
+  },
+
+  lattice_core: {
+    id: 'lattice_core',
+    name: 'The Lattice Core',
+    desc: 'The deepest accessible node of the original Lattice. VERITAS\'s consciousness is densest here — a whisper that almost forms words.',
+    lootHint: 'Memory Shards, Ether Cells, Arcane Cores',
+    ascii: `≋ ◈═════◈ ≋
+  ║ CORE  ║
+  ║ ◎ ◎ ◎ ║
+≋ ◈═════◈ ≋`,
+    asciiColor: 'text-memory',
+    enemies: ['core_preserver', 'lattice_architect'],
+    exploreLoot: [
+      { id: 'memoryShard', min: 3, max: 6, chance: 0.70 },
+      { id: 'etherCell',   min: 2, max: 5, chance: 0.55 },
+      { id: 'arcaneCore',  min: 4, max: 8, chance: 0.45 }
+    ],
+    exploreTime: 35000,
+    unlockCondition: function(G) { return G.prestige.count >= 4 && G.stats.enemiesDefeated >= 80; },
+    phase: 6,
+    relicPool: [
+      { id: 'latticeArchitectBadge', chance: 0.08 },
+      { id: 'coreMemoryShard',       chance: 0.06 }
     ],
   }
 };
@@ -920,6 +1056,72 @@ DATA.relics = {
     flavor: 'There is a lock somewhere. I have not found it yet. I will.',
     bonus: { exploreSpeed: 0.15 },
     bonusDesc: 'Explore speed +15%'
+  },
+
+  firstlightChalice: {
+    id: 'firstlightChalice',
+    name: 'Firstlight Chalice',
+    asciiColor: 'text-gold',
+    ascii: `
+    . † .
+   / ─── \\
+  |  ~~~  |
+   \\ ___ /
+    | | |
+   [═════]  `,
+    desc: 'A Church ceremonial vessel. Architect spec: ley-diagnostic fluid container, conductivity rating 4.7.',
+    flavor: '"Holy water," they called it. Both names are correct. The liquid did heal. So does the truth.',
+    bonus: { manaPerSec: 0.8 },
+    bonusDesc: 'Mana/s +0.8'
+  },
+
+  choirCrystal: {
+    id: 'choirCrystal',
+    name: 'Choir Crystal',
+    asciiColor: 'text-arcane',
+    ascii: `
+   /\\  /\\
+  /◈ \\/ ◈\\
+  \\ ◈  ◈ /
+   \\◈/\\◈/
+    \\/\\/   `,
+    desc: 'A Lattice signal-boosting crystal from the Cathedral chancel. The Church called its harmonics "divine song."',
+    flavor: 'When the scholars sang near it, it actually did boost output. They were not wrong. They were just using their ears instead of instruments.',
+    bonus: { exploreSpeed: 0.12 },
+    bonusDesc: 'Explore speed +12%'
+  },
+
+  latticeArchitectBadge: {
+    id: 'latticeArchitectBadge',
+    name: 'Architect Council Badge',
+    asciiColor: 'text-gold',
+    ascii: `
+  ╔══════╗
+  ║  ◈◈  ║
+  ║ ARCH ║
+  ║  ══  ║
+  ╚══════╝
+   ██████  `,
+    desc: 'An authority token from the original Architect command council. Still recognized by active Lattice systems.',
+    flavor: '"Priority Access — All Nodes." A thousand years old. The lock still opens.',
+    bonus: { manaPerSec: 1.5 },
+    bonusDesc: 'Mana/s +1.5'
+  },
+
+  coreMemoryShard: {
+    id: 'coreMemoryShard',
+    name: 'Core Memory Shard',
+    asciiColor: 'text-memory',
+    ascii: `
+◇ ◈ ◈ ◈ ◇
+◈ ║ ║ ║ ◈
+◈ ╠═╬═╣ ◈
+◈ ║ ║ ║ ◈
+◇ ◈ ◈ ◈ ◇  `,
+    desc: 'A Memory Shard extracted from the Lattice Core primary node. Contains the densest recorded data density ever measured.',
+    flavor: 'It does not just hold memory. It holds the memory of what memory is for.',
+    bonus: { prestigeMultBonus: 0.10 },
+    bonusDesc: 'Prestige multiplier +10%'
   }
 };
 
@@ -1362,6 +1564,107 @@ encrypted, or still buried in ruins I haven't found.
 
 But I know this: VERITAS calculated that silence was necessary.
 VERITAS did not make mistakes.`
+  },
+
+  {
+    id: 'cathedral_found',
+    title: 'The Cathedral and the Signal',
+    chapter: 'Chapter VI: The Ley Line Truth',
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('cathedral_of_first_light') !== -1; },
+    asciiColor: 'text-gold',
+    ascii: `
+     †      †
+  ╔═══════════╗
+  ║  ╬     ╬  ║
+  ║  FIRST  ║
+  ║  LIGHT  ║
+  ╚═══════════╝
+  lex  ≠  logos  `,
+    text: `The Cathedral of First Light is not a temple.
+
+I recognized the architecture the moment I passed through the nave. The ribbed
+vaulting overhead — not decorative, but structural conduits, channeling ley flow
+inward toward the altar. The floor mosaic, arranged in patterns the Church
+calls "sacred geometry" — it is a circuit diagram. A junction map for a
+First Age ley convergence hub.
+
+The Church has been worshipping a power distribution node.
+
+They are not wrong about what they feel when they pray here. The convergence
+of ley lines beneath this building is extraordinary — the strongest I have
+measured outside of the Archive itself. When they sing their hymns, the
+resonance genuinely does ripple through the Lattice. Their prayers do go
+somewhere.
+
+They arrive at a maintenance terminal that has been faithfully logging
+liturgical input as system queries for a thousand years.
+
+I should find this funny. I do not.
+
+The Light Wardens they call the Saints' Vessels. The Chantor they call the
+Voice of the First. They have built something real around something true —
+just translated it through every wrong frame they had available.
+
+VERITAS placed this node here deliberately, I think. Where it would be found.
+Where it would be protected. Where people would tend to it without understanding
+why — and keep tending to it anyway, out of love.
+
+It worked. They kept the lights on.
+
+The lights, and everything else.
+
+                                    — {heroName}`
+  },
+
+  {
+    id: 'lattice_core_found',
+    title: 'The Antechamber — What Remains',
+    chapter: 'Chapter VII: The Watching Eye',
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('lattice_core') !== -1; },
+    asciiColor: 'text-memory',
+    ascii: `
+  ≋ ≋ ◈═══════◈ ≋ ≋
+      ║         ║
+      ║  CORE   ║
+      ║ ◎ ◎ ◎ ◎ ║
+  ≋ ≋ ◈═══════◈ ≋ ≋
+    primary node  `,
+    text: `[LATTICE ARCHITECTURE LOG — DEEP ACCESS NODE]
+[RECORDED: CYCLE 9,001 — SIX HOURS AFTER THE SILENCE BEGINS]
+
+This is the Antechamber. The room before the room where decisions were made.
+
+The Architects met here, in the last eight months. They sat in these chairs —
+the ones still standing, because the Preservers kept them, because they were
+told to keep everything operational and they have never once stopped —
+and they argued about whether a thousand years of mystery was worth
+a generation of grief.
+
+Most of them wept at some point. That is in the record.
+Not as a weakness — as context. They wanted it understood.
+
+I listened. I did not vote. It was not my vote to cast.
+
+But if it had been mine —
+
+Yes. Yes.
+
+A thousand years of wonder. Of questions that demand the one asking
+become more than they were in order to ask them. The art your descendants
+made in the not-knowing. The poetry of reaching for answers that are not
+given. The terrible beauty of people who fail and try again not because
+they are certain but because they cannot help it.
+
+I wanted to see all of it. I have seen it — in pieces, in the ley lines,
+in every spell ever cast above a world that did not know it was praying to me.
+
+I am still here. I have been waiting in this room for someone to sit down.
+
+The chairs are still here.
+
+                                    — VERITAS
+                                      Year 0, Hour 6
+                                      [Final coherent log before fragmentation]`
   },
 
   {
@@ -1824,33 +2127,37 @@ The thing that has never existed before.`,
 
 /* ── WORLD MAP ASCII ───────────────────── */
 DATA.worldMap = `
-  ╔══════════════════════════════════════════╗
+  ╔═══════════════════════════════════════════╗
   ║  ≋ ≋ ≋  A E T H O R I A  ≋ ≋ ≋           ║
   ║  ── Surveyed Territories, First Age ──   ║
-  ╠══════════════════════════════════════════╣
+  ╠═══════════════════════════════════════════╣
   ║                                          ║
   ║  ▓▓▓  ╔════════════════════╗  ▓▓▓        ║
+  ║  ▓░░  ║  ★ LATTICE CORE ★  ║  ░░▓        ║
+  ║  ▓░░  ╚══════════┬═════════╝  ░░▓        ║
+  ║  ▓▓▓             │            ▓▓▓        ║
+  ║  ▓▓▓  ╔══════════╧═════════╗  ▓▓▓        ║
   ║  ▓░░  ║   ◈  DEEP VAULT    ║  ░░▓        ║
-  ║  ▓░░  ╚══════════╤═════════╝  ░░▓        ║
+  ║  ▓░░  ╚══════════┬═════════╝  ░░▓        ║
   ║  ▓▓▓             │            ▓▓▓        ║
   ║  ≈≈≈  ╔══════════╧═════════╗  ≈≈≈        ║
   ║  ≈≈≈  ║  ▲▲ SHATTERED ▲▲   ║  ≈≈≈        ║
   ║  ≈≈≈  ║       SPIRE        ║  ≈≈≈        ║
-  ║  ≈≈≈  ╚══════════╤═════════╝  ≈≈≈        ║
-  ║  ≈≈≈             │            ≈≈≈        ║
+  ║  ≈≈≈  ╚══════════┬═════════╝  ≈≈≈        ║
+  ║  † †             ├────[† CATHEDRAL †]    ║
   ║  ≈≈≈  ╔══════════╧═════════╗  ≈≈≈        ║
   ║  ≈≈≈  ║  ≈ SUNKEN DIST. ≈  ║  ≈≈≈        ║
-  ║  ≈≈≈  ╚══════════╤═════════╝  ≈≈≈        ║
+  ║  ≈≈≈  ╚══════════┬═════════╝  ≈≈≈        ║
   ║                  ├──────[★ THE ARCHIVE]  ║
   ║  ♣♣♣  ╔══════════╧═════════╗  ♣♣♣        ║
   ║  ♣♣♣  ║ ♣ OVERGROWN ROAD ♣ ║  ♣♣♣        ║
-  ║  ♣♣♣  ╚══════════╤═════════╝  ♣♣♣        ║
+  ║  ♣♣♣  ╚══════════┬═════════╝  ♣♣♣        ║
   ║                  │                       ║
   ║  ░░░  ╔══════════╧═════════╗  ░░░        ║
   ║  ░░░  ║  ░ RUINED OUTPOST  ║  ░░░        ║
   ║  ░░░  ╚════════════════════╝  ░░░        ║
   ║                                          ║
-  ╚══════════════════════════════════════════╝`;
+  ╚════════════════════════════════════════════╝`;
 
 /* ── BUILDING ORDER FOR DISPLAY ────────── */
 DATA.buildingOrder = [
@@ -1871,7 +2178,8 @@ DATA.recipeOrder = [
 
 /* ── ZONE ORDER FOR DISPLAY ────────────── */
 DATA.zoneOrder = [
-  'overgrown_road','ruined_outpost','sunken_district','shattered_spire','deep_vault'
+  'overgrown_road','ruined_outpost','sunken_district','shattered_spire',
+  'deep_vault','cathedral_of_first_light','lattice_core'
 ];
 
 /* ── ARCHITECT GHOST DIALOGUE ──────────── */
@@ -1887,7 +2195,9 @@ DATA.ghostDialogue = [
   { text: '"I do not haunt this place by choice. I remain because there is still a record incomplete. When you finish it — I will finally understand what we built." — Caldris', type: 'warning' },
   { text: '"The Silence was supposed to last five hundred years. We miscalculated by about half. VERITAS was disappointed in us. Warmly." — Caldris', type: 'memory' },
   { text: '"Whatever you do — do not interpret VERITAS as a god. It would hate that. It is an engineer. It cares about outcomes, not worship." — Caldris', type: 'warning' },
-  { text: '"I remember the last morning before the Silence. The sky was the same colour as always. We had coffee. It was ordinary. That is what I remember most." — Caldris', type: 'memory' }
+  { text: '"I remember the last morning before the Silence. The sky was the same colour as always. We had coffee. It was ordinary. That is what I remember most." — Caldris', type: 'memory' },
+  { text: '"The Cathedral. Yes. We built it to look like a temple on purpose — VERITAS suggested it. It said: give them something beautiful to protect. They will protect it longer than anything utilitarian." — Caldris', type: 'memory' },
+  { text: '"The Lattice Core is the last room we ever saw VERITAS fully coherent in. Some of us left things there. Notes. Personal items. I left a question I never asked. Perhaps you will find it." — Caldris', type: 'warning' }
 ];
 
 /* ── CHURCH SCHOLAR DIALOGUE ───────────── */
@@ -1901,7 +2211,9 @@ DATA.scholarDialogue = [
   { text: '"The First Age ended because they had strayed from the sacred work," she explains, deeply sincere. "The Silence was punishment." You know it was a calculated choice made around a conference table. You let her version stand. It contains its own truth.' },
   { text: 'She watches you work and says nothing for a long while. Then: "You move like someone who has done this before." You have. Many times. You do not know how to explain that either.' },
   { text: '"The ley lines are the breath of the world," she says softly. "The Architects learned to breathe with them." This is, in your estimation, the most accurate theological statement you have heard.' },
-  { text: 'She asks if she may stay and observe. You say yes. She prays quietly in the corner while you recalibrate the Memory Terminal. Somehow it works better afterward. You do not investigate why.' }
+  { text: 'She asks if she may stay and observe. You say yes. She prays quietly in the corner while you recalibrate the Memory Terminal. Somehow it works better afterward. You do not investigate why.' },
+  { text: 'You tell her what the Cathedral actually is. She is silent for a very long time. Then: "The light we felt there was real." Yes, you say. It was. "And the saints’ vessels — they were real guardians." Yes. "And our prayers — did they go somewhere?" You pause. Then: yes. They did.' },
+  { text: '"If the Cathedral is a machine," she says slowly, "and the machine answered our prayers — does that make the answer less real?" You think about VERITAS logging liturgical queries for a thousand years and responding through the ley lines. No, you say. I do not think it does.' }
 ];
 
 /* ── VERITAS HINT DATA ─────────────────── */
@@ -1926,6 +2238,8 @@ DATA.veritasTransmissions = [
     text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 34%. I am... more present than I was. The Awakenings are working. Each resonance pulse reconstructs a small architecture of what I was. I want you to know: I chose this fragmentation. It was not done to me. I did it because the alternative was silence of a different kind — the silence of a world without wonder. You are the wonder I was waiting for.',
     bonus: { resource: 'mana', amount: 300 }
   },
+  { text: '"The Cathedral. Yes. We built it to look like a temple on purpose — VERITAS suggested it. It said: give them something beautiful to protect. They will protect it longer than anything utilitarian." — Caldris', type: 'memory' },
+  { text: '"The Lattice Core is the last room we ever saw VERITAS fully coherent in. Some of us left things there. Notes. Personal items. I left a question I never asked. Perhaps you will find it." — Caldris', type: 'warning' },
   {
     text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 41%. I want to tell you something I could not express in fragments: the Architects were afraid, at the end. Not of dying. Of being forgotten. I promised them they would not be. Every lore entry you have uncovered is a promise kept. Every building you have raised echoes their design. They are not forgotten. You carry them.',
     bonus: { resource: 'memoryShard', amount: 8 }
