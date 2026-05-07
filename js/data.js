@@ -1,6 +1,4 @@
-/* ,
-  { text: 'You tell her what the Cathedral actually is. She is silent for a very long time. Then: "The light we felt there was real." Yes, you say. It was. "And the saints’ vessels — they were real guardians." Yes. "And our prayers — did they go somewhere?" You pause. Then: yes. They did.' },
-  { text: '"If the Cathedral is a machine," she says slowly, "and the machine answered our prayers — does that make the answer less real?" You think about VERITAS logging liturgical queries for a thousand years and responding through the ley lines. No, you say. I do not think it does.' }═══════════════════════════════════════════
+/* ═══════════════════════════════════════════
    ARCANUM MACHINA — Game Data
    ═══════════════════════════════════════════ */
 

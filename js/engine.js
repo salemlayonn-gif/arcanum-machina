@@ -65,14 +65,13 @@ var Engine = {
   },
 
   checkHeroRegen: function(dt) {
+    if (G.combat.active) return;
+    var maxHp = getHeroMaxHp();
     var regen = getHeroRegen();
-    if (regen > 0 && !G.combat.active) {
-      var maxHp = getHeroMaxHp();
+    if (regen > 0) {
       G.hero.hp = Math.min(G.hero.hp + regen * dt, maxHp);
-    }
-    // Passive HP regen even without armor (slow)
-    if (!G.combat.active && G.hero.hp < getHeroMaxHp()) {
-      G.hero.hp = Math.min(G.hero.hp + 0.5 * dt, getHeroMaxHp());
+    } else if (G.hero.hp < maxHp) {
+      G.hero.hp = Math.min(G.hero.hp + 0.5 * dt, maxHp);
     }
   },
 

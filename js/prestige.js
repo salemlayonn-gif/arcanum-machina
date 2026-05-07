@@ -51,6 +51,9 @@ var Prestige = {
 
     // Switch to archive screen
     G.ui.screen = 'archive';
+
+    // Save immediately so prestige isn't lost if the tab closes
+    saveGame();
   },
 
   getPrestigeInfo: function() {

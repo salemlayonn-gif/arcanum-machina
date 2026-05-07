@@ -380,6 +380,7 @@ function saveGame() {
       buildings: G.buildings,
       hero: G.hero,
       inventory: G.inventory,
+      crafting: G.crafting,
       stats: G.stats,
       loreUnlocked: G.loreUnlocked,
       prestige: G.prestige,
@@ -411,6 +412,7 @@ function loadGame() {
     G.buildings = data.buildings || {};
     G.hero      = Object.assign({level:1,exp:0,expToNext:50,maxHp:50,hp:50,baseAttack:5,baseDefense:2,equipment:{weapon:null,armor:null,accessory:null}}, data.hero);
     G.inventory = data.inventory || [];
+    G.crafting  = Object.assign({ slot0: null, slot1: null }, data.crafting || {});
     G.stats     = Object.assign({totalMana:0,enemiesDefeated:0,exploreRuns:0,coresCrafted:0,itemsCrafted:0,prestigeCount:0}, data.stats);
     G.loreUnlocked = data.loreUnlocked || [];
     G.prestige  = Object.assign({count:0,resonance:0,totalEarned:0,multiplier:1.0}, data.prestige);

@@ -81,6 +81,13 @@ var Combat = {
     var critText = crit ? ' [CRITICAL!]' : '';
     Combat.combatLog(G.heroName + ' attacks for ' + heroDmg + ' damage.' + critText, 'cl-hero');
 
+    /* Check enemy death from hero attack */
+    if (G.combat.enemyHp <= 0) {
+      G.combat.enemyHp = 0;
+      Combat.winFight(enemy);
+      return;
+    }
+
     /* Golem attacks if alive — scales with hero level */
     if (G.combat.golemHp > 0) {
       var golemBase = 6 + Math.floor(G.hero.level / 2);
@@ -89,7 +96,7 @@ var Combat = {
       Combat.combatLog('Golem strikes for ' + golemDmg + '.', 'cl-hero');
     }
 
-    /* Check enemy death */
+    /* Check enemy death from golem attack */
     if (G.combat.enemyHp <= 0) {
       G.combat.enemyHp = 0;
       Combat.winFight(enemy);
