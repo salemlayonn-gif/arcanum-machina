@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.1.0',
+  version: '1.2.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -357,6 +357,14 @@ function decodeSegmentSeconds() {
 function isLoreDecoded(id) {
   var d = G.decoding[id];
   return !d || !!d.complete;
+}
+
+/* A road, once walked, stays on the map — even if the resources that opened it are spent. */
+function zoneUnlocked(zoneId) {
+  var zone = DATA.zones[zoneId];
+  if (!zone) return false;
+  if ((G.explore.visited || []).indexOf(zoneId) !== -1) return true;
+  return !!zone.unlockCondition(G);
 }
 
 function getLoreEntry(id) {

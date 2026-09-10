@@ -1,5 +1,18 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-10 (latest) — v1.2.0: the last three open items
+
+- **Move slowly / hold still.** Care Golems and Protocol Drones are `calmable`; a combat button plays a
+  three-line scripted pass (half exp, no loot, 8 s cooldown). First use unlocks the *Performing Wellness* note.
+- **The Spire's admin terminal.** With the Architect's Seal and five Spire explores, the map offers
+  [CLEAR THE EMERGENCY FLAG] (30 Cores + 10 Ether + 5 Shards). Afterwards Architect Sentries check the network
+  and stand down (`allClearLines`, half exp). Lore *The All-Clear*; margin note (Defense +2).
+- **Visitors.** `DATA.travellers` ×7 shown on the Archive screen in six-minute windows (two on, one quiet) once
+  the Scout Post has read three roads; hidden after the ending.
+- Zone art: Spire cut, Outpost sparks, Vault terminal ring. Harness extended (F2). IMPROVEMENTS.md: nothing open.
+
+---
+
 ## Session 2026-09-10 (later) — v1.1.0: the IMPROVEMENTS.md pass
 
 Everything in `IMPROVEMENTS.md` implemented except the three items marked open there. Highlights:

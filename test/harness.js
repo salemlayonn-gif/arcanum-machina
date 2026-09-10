@@ -85,6 +85,29 @@ Combat.clearResult(); G.combat.cooldownUntil=0;
 Combat.startFight('overgrown_road'); assert(!G.combat.script, 'second wolf is a real fight'); Combat.flee(); Combat.clearResult();
 Math.random=realRandom;
 
+console.log('F2. move slowly / all-clear / visitors');
+G.buildings={scoutPost:1, ancientWorkshop:1}; G.stats.enemiesDefeated=25; G.seeds={}; G.combat.cooldownUntil=0; G.hero.hp=50; Math.random=()=>0;
+Combat.startFight('sunken_district');
+assert(G.combat.enemyId==='care_golem' && DATA.enemies.care_golem.calmable, 'care golem is calmable');
+Combat.moveSlowly(); for (let i=0;i<5;i++) Combat.processTurn();
+assert(G.combat.result==='pass' && G.seeds.movedSlowly && G.combat.cooldownUntil - Date.now() > 6000, 'moved slowly: pass, seed set, long cooldown');
+Combat.clearResult(); G.combat.cooldownUntil=0;
+G.relics=['architectsSeal']; G.explore.zoneRuns={shattered_spire:5}; G.res.arcaneCore=30; G.res.etherCell=10; G.res.memoryShard=5; G.stats.enemiesDefeated=40;
+assert(Exploration.canClearSpireFlag(), 'spire flag clearable');
+Exploration.clearSpireFlag();
+assert(G.seeds.spireAllClear && G.res.arcaneCore===0, 'flag cleared and paid');
+G.explore.visited=['shattered_spire']; G.res.memoryShard=0; assert(zoneUnlocked('shattered_spire') && strip(RENDER.worldMap()).indexOf('SHATTERED SPIRE')!==-1, 'visited zone stays unlocked with shards spent');
+G.explore.visited=['shattered_spire']; G.res.memoryShard=3; Math.random=()=>0.9; // second enemy: architect_sentry
+Combat.startFight('shattered_spire');
+assert(G.combat.enemyId==='architect_sentry' && G.combat.script && G.combat.script.resolve==='stand', 'sentry stands down');
+for (let i=0;i<5;i++) Combat.processTurn(); assert(G.combat.result==='pass', 'sentry encounter passes'); Combat.clearResult();
+Math.random=realRandom;
+G.stats.exploreRuns=3; G.playTime=0; G.flags.ended=true; assert(RENDER.currentVisitor()===null, 'no visitors after the ending');
+G.flags.ended=false; assert(RENDER.currentVisitor()&&RENDER.currentVisitor().who.indexOf('salt')!==-1, 'first visitor is H.');
+G.playTime=2*360+1; assert(RENDER.currentVisitor()===null, 'third window: road quiet');
+G.playTime=3*360+1; assert(RENDER.currentVisitor().who.indexOf('pilgrim')!==-1, 'next visitor is the pilgrim');
+G.playTime=0;
+
 console.log('G. renderers');
 G.buildings={manaConduit:4, runicWorkbench:1, scrapDepot:2}; G.awakening=null;
 let panel = strip(RENDER.archivePanel({}));

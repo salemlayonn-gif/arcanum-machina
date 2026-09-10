@@ -19,7 +19,7 @@ var Combat = {
 
     var zone = DATA.zones[zoneId];
     if (!zone) return;
-    if (!zone.unlockCondition(G)) return;
+    if (!zoneUnlocked(zoneId)) return;
 
     var enemies = zone.enemies;
     var enemyId = enemies[Math.floor(Math.random() * enemies.length)];
@@ -59,6 +59,15 @@ var Combat = {
       Combat.combatLog(enemy.encounterIntro || ('Something is here. ' + enemy.name + '.'), 'cl-system');
       G.combat.script = { lines: enemy.encounter.slice(), idx: 0, resolve: 'grant' };
       addLog('Descent: ' + zone.name + '. ' + enemy.name + '.', 'log-combat');
+      RENDER.markDirty();
+      return;
+    }
+
+    /* The Spire's emergency flag has been cleared: Sentries check the network and stand down */
+    if (enemy.allClearLines && G.seeds.spireAllClear) {
+      Combat.combatLog('Something moves in the base section. ' + enemy.name + '.', 'cl-system');
+      G.combat.script = { lines: enemy.allClearLines.slice(), idx: 0, resolve: 'stand', exp: Math.floor(enemy.exp / 2) };
+      addLog(enemy.name + ' — ' + zone.name + '. It stands down.', 'log-combat');
       RENDER.markDirty();
       return;
     }
@@ -110,9 +119,24 @@ var Combat = {
     G.combat.script = null;
     if (s.resolve === 'grant') {
       Combat.winFight(enemy, { encounter: true });
+    } else if (s.resolve === 'calm') {
+      G.seeds.movedSlowly = true;
+      addLog('You passed ' + enemy.name + ' by being what it was built to look for.', 'log-combat');
+      Combat.resolvePass(enemy, { exp: Math.floor(enemy.exp / 2), cooldown: 8000 });
+    } else if (s.resolve === 'stand') {
+      Combat.resolvePass(enemy, { exp: s.exp || 0 });
     } else {
       Combat.resolvePass(enemy, {});
     }
+  },
+
+  /* Care Golems read calm as cared-for; Protocol Drones enforce stillness. Give them what they look for. */
+  moveSlowly: function() {
+    if (!G.combat.active || G.combat.result || G.combat.script) return;
+    var enemy = DATA.enemies[G.combat.enemyId];
+    if (!enemy || !enemy.calmable) return;
+    G.combat.script = { lines: enemy.calmLines.slice(), idx: 0, resolve: 'calm' };
+    RENDER.markDirty();
   },
 
   processTurn: function() {
@@ -262,7 +286,7 @@ var Combat = {
       grantExp(opts.exp);
       Combat.combatLog('You learn something from it. (+' + opts.exp + ')', 'cl-loot');
     }
-    G.combat.cooldownUntil = Date.now() + 2000;
+    G.combat.cooldownUntil = Date.now() + (opts.cooldown || 2000);
     if (G.buffs) { G.buffs.attackBonus = 0; G.buffs.shieldActive = false; G.buffs.enemyStunned = false; }
     RENDER.markDirty();
   },

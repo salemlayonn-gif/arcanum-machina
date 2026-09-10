@@ -136,6 +136,14 @@ DATA.enemies = {
     attackVerb: 'restrains',
     zone: 'sunken_district',
     backdrop: '≈≈≈≈≈≈≈≈≈≈≈',
+    /* Its sensors are calibrated for distress. Calm reads as cared-for. (Appendix A) */
+    calmable: true,
+    calmLabel: '[MOVE SLOWLY]',
+    calmLines: [
+      'You slow down. Every movement deliberate, predictable — the pattern its sensors read as cooperative.',
+      'It wades closer. Scans. Vital signs: nominal. Rest period: not yet due.',
+      'It makes the sound that means the conversation is over, and moves on to the next room.'
+    ],
     deathMsg: 'WELLNESS_ROUTINE halted. The unit settles into the water. "...rest now..."',
     loot: [
       { id: 'scrap',      min: 10, max: 20, chance: 0.8 },
@@ -158,6 +166,14 @@ DATA.enemies = {
     attackVerb: 'fires at',
     zone: 'sunken_district',
     backdrop: '≈≈≈≈≈≈≈≈≈≈≈',
+    /* It enforces stillness. Be still. */
+    calmable: true,
+    calmLabel: '[HOLD STILL]',
+    calmLines: [
+      'You stop. Completely. You become part of the district\'s stillness.',
+      'It hangs in the air above the canal, reading. ORDER: maintained. It has nothing to enforce.',
+      'It drifts on down the drowned street.'
+    ],
     deathMsg: 'ORDER_ENFORCEMENT suspended. Signal lost. The district is quiet again, as it has been for a thousand years.',
     loot: [
       { id: 'arcaneCore',  min: 2, max: 4, chance: 0.7 },
@@ -198,6 +214,12 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'fires at',
     zone: 'shattered_spire',
+    /* After the Spire's admin terminal clears the emergency flag, they stand down instead (Appendix A). */
+    allClearLines: [
+      'The Sentry tracks you. Engagement mode — then it checks the network, the way it has every second for a thousand years.',
+      'STATUS: ALL CLEAR. Received.',
+      'It lowers its weapons and returns to standby. It has been waiting for this longer than your language has existed.'
+    ],
     deathMsg: 'THREAT_RESPONSE suspended. The unit powers down — still waiting for an all-clear that will never come.',
     loot: [
       { id: 'arcaneCore',  min: 2, max: 4, chance: 0.75 },
@@ -375,9 +397,9 @@ DATA.zones = {
     desc: 'A First Age garrison. The walls still spark: the building has been running out of power for a thousand years and has not quite finished.',
     mapLabel: '░ RUINED OUTPOST',
     lootHint: 'Scrap, Arcane Cores, Memory Shards (rare)',
-    ascii: `|‾| ~|‾|
+    ascii: `|‾|*·|‾|
 |_|░░|_|
-~~ ░░░ ~~
+~·*░░░*·~
 ░░░░░░░░░`,
     asciiColor: 'text-dim',
     enemies: ['rusted_guardian', 'scrap_crawler'],
@@ -427,10 +449,10 @@ DATA.zones = {
     desc: 'The nearest relay node, severed a third of the way up. The cut is clean. Something still runs the tower\'s protocols in the open air.',
     mapLabel: '▲ SHATTERED SPIRE ▲',
     lootHint: 'Memory Shards, Ether Cells, Arcane Cores',
-    ascii: `  /|\\
- / ▲ \\
-/══▲══\\
-▲broken▲`,
+    ascii: `  · ▲   ▲ ·
+ ═══╪═══╪═══
+   ║ ~ ~ ║
+  ▓▓▓▓▓▓▓▓▓`,
     asciiColor: 'text-arcane',
     enemies: ['mana_wraith', 'architect_sentry'],
     exploreLoot: [
@@ -454,9 +476,9 @@ DATA.zones = {
     mapLabel: '◈  DEEP VAULT',
     lootHint: 'Memory Shards, Ether Cells',
     ascii: `▓╔═════╗▓
-▓║  ◈  ║▓
-▓╚══╤══╝▓
-▓▓▓▓│▓▓▓▓`,
+▓║◈ ◈ ◈║▓
+▓║ ◈ ◈ ║▓
+▓╚══╤══╝▓`,
     asciiColor: 'text-gold',
     enemies: ['vault_automaton', 'lattice_fragment'],
     exploreLoot: [
@@ -1290,6 +1312,22 @@ DATA.annotations = [
     bonusDesc: 'Mana/s +0.5'
   },
   {
+    id: 'performing_wellness',
+    title: 'Performing Wellness',
+    note: 'I am aware of the irony of performing calm for a golem that is itself a broken form of care. It works. That is the part I sit with.',
+    condition: function(G) { return !!(G.seeds || {}).movedSlowly; },
+    bonus: { maxHp: 6 },
+    bonusDesc: 'Max HP +6'
+  },
+  {
+    id: 'the_all_clear',
+    title: 'The All-Clear',
+    note: 'The flag was set at the moment of the Silence and never cleared, because the network that would have cleared it was the thing that ended. I cleared it. The Sentries lowered their weapons like men who had been holding their breath.',
+    condition: function(G) { return !!(G.seeds || {}).spireAllClear; },
+    bonus: { defense: 2 },
+    bonusDesc: 'Defense +2'
+  },
+  {
     id: 'complete_record',
     title: 'The Complete Record',
     note: 'VERITAS has been watching. It watched every expedition, every fight, every night I nearly gave up. Always. The archive is complete.',
@@ -1781,6 +1819,30 @@ The channel patterns on the cut face run outward. The force did not come from ou
 The Architects cut their own relay node.
 
 I do not know why yet. But this is the first thing I have found in Aethoria that was done, rather than simply happened.`
+  },
+
+  {
+    id: 'spire_all_clear',
+    title: 'The All-Clear',
+    chapter: 'Chapter II: Aethoria',
+    unlockCondition: function(G) { return !!(G.seeds || {}).spireAllClear; },
+    asciiColor: 'text-tech',
+    ascii: `
+  ╔══════════════════════╗
+  ║ SPIRE ADMIN TERMINAL ║
+  ║ emergency_flag: SET  ║
+  ║ > clear              ║
+  ║ emergency_flag: ---  ║
+  ╚══════════════════════╝  `,
+    text: `The Spire's administrative terminal is on the third landing of the base section, behind a door that recognised the Architect's Seal before I had finished raising it.
+
+The Sentries were never corrupted. That is what the terminal showed me. At the moment of the severance, the Spire's own systems classified the situation as an active emergency and set every Sentry to sustained response. The mode was designed to last until the emergency was resolved. The network that would have resolved it was the thing that ended.
+
+They have been holding an emergency for a thousand years because no one was left to tell them it was over.
+
+I told them. One flag. The terminal asked for confirmation twice, the way systems do when the operation is irreversible, and I confirmed twice, and the flag cleared.
+
+On the way out, the nearest Sentry tracked me, checked the network, and lowered its weapons. It returned to standby with what I can only describe as care. Like a man setting down something heavy that he had forgotten he was carrying.`
   },
 
   {
@@ -2522,6 +2584,46 @@ DATA.prologue = [
       'It wants to be found. It has already been found.'
     ],
     next: 'THE MORNING'
+  }
+];
+
+/* ── VISITORS — living people, before the Scholar (Ch. 2, Ch. 13, Appendix A) ──
+   Shown at the Archive once the Scout Post has read a few roads. Each stays a while, then the road is quiet. */
+DATA.travellers = [
+  {
+    who: 'H., the salt merchant',
+    ascii: '  o   /\\_/\\\n /|\\  (mule)\n / \\   |  |',
+    text: '"The mules will go in now," H. says, unloading salt and iron at the valley mouth. He does not come further than the first conduit. "Whatever it is you did — it feels less like being watched. More like being expected."'
+  },
+  {
+    who: 'a pilgrim of the First Light',
+    ascii: '   o\n  /|\\  †\n  / \\',
+    text: '"They say the lines converge here," the pilgrim says. She kneels at the edge of the courtyard and does not ask permission. When she leaves, the conduit nearest her runs a fraction brighter for an hour. You do not investigate why.'
+  },
+  {
+    who: 'a young man in Academy grey',
+    ascii: '   o\n  /|\\  [=]\n  / \\',
+    text: '"I read the paper," he says, embarrassed. "The censured one. I think it was right." He has walked four days to say so. You give him tea and do not tell him how right it was.'
+  },
+  {
+    who: 'two riders from the eastern hamlet',
+    ascii: '  o    o\n /|\\  /|\\\n / \\  / \\',
+    text: 'They are checking on the light they can see from the ridge at night. "We thought it was a fire." You tell them it is not a fire. They look at the walls for a long time and ride home slowly.'
+  },
+  {
+    who: 'a child, sent after a straying goat',
+    ascii: '   o\n  /|\\   ~~\n  / \\  (goat)',
+    text: 'She stands at the valley mouth and stares at the glowing walls. "Is it alive?" Yes, you say. "Is it kind?" You think about that longer than she expects. It is trying to be.'
+  },
+  {
+    who: 'a cartographer with a wrong map',
+    ascii: '   o\n  /|\\  ▒▒▒\n  / \\  ▒▒▒',
+    text: '"The old roads," she says, unrolling a chart that is wrong in every particular. "Do they really go everywhere?" You show her the Scout Post readings. She is quiet for a while. Then she asks for a fresh sheet.'
+  },
+  {
+    who: 'an elderly canon from the eastern territories',
+    ascii: '   o\n  /|\\  †\n  / \\',
+    text: '"In forty years of sitting with the dying," she says, "I have felt the current be gentle. Was I imagining it?" No, you say. She nods as though she had known, and had only needed one other person to say it.'
   }
 ];
 

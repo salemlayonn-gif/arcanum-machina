@@ -160,6 +160,20 @@ var RENDER = {
       html += RENDER.renderCrafting();
     }
 
+    // A visitor on the road (once the Scout Post has read a few roads; before the Scholar)
+    var visitor = RENDER.currentVisitor();
+    if (visitor) {
+      html += '<div class="section">';
+      html += '<div class="section-header">── A VISITOR ───────────────────────────────────</div>';
+      html += '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">';
+      html += '<pre class="ascii-art text-tech" style="margin:0;flex-shrink:0;">' + escapeHtml(visitor.ascii) + '</pre>';
+      html += '<div>';
+      html += '<div class="text-dim" style="font-size:0.79rem;margin-bottom:6px;">' + escapeHtml(visitor.who) + ' has come up the valley road.</div>';
+      html += '<div style="font-size:0.86rem;line-height:1.6;">' + escapeHtml(visitor.text) + '</div>';
+      html += '</div></div>';
+      html += '</div>';
+    }
+
     // Architect Ghost NPC (prestige 2+)
     if (G.prestige.count >= 2) {
       var ghostIdx = Math.floor(G.playTime / 300) % DATA.ghostDialogue.length;
@@ -192,6 +206,16 @@ var RENDER = {
     }
 
     return html;
+  },
+
+  /* Visitors come in six-minute windows: two windows present, one window the road is quiet. */
+  currentVisitor: function() {
+    if ((G.buildings.scoutPost || 0) < 1 || G.stats.exploreRuns < 3) return null;
+    if (G.flags.ended) return null;
+    var win = Math.floor(G.playTime / 360);
+    if (win % 3 === 2) return null;
+    var list = DATA.travellers;
+    return list[Math.floor(win / 3) % list.length];
   },
 
   getStatusFlavor: function() {
@@ -377,12 +401,12 @@ var RENDER = {
     DATA.zoneOrder.forEach(function(zid) {
       var zone = DATA.zones[zid];
       if (!zone) return;
-      var unlocked = zone.unlockCondition(G);
+      var unlocked = zoneUnlocked(zid);
 
       if (!unlocked) {
         // Show locked if the previous zone is known
         var zIdx = DATA.zoneOrder.indexOf(zid);
-        var prevKnown = zIdx === 0 || DATA.zones[DATA.zoneOrder[zIdx-1]].unlockCondition(G);
+        var prevKnown = zIdx === 0 || zoneUnlocked(DATA.zoneOrder[zIdx-1]);
         if (prevKnown) {
           html += '<div class="zone-locked"><div class="zone-name">— — —</div>' +
                   '<div class="text-dim" style="font-size:0.79rem;">The road continues past here. You are not ready for what is at the end of it.</div></div>';
@@ -440,6 +464,24 @@ var RENDER = {
       }
 
       html += '</div>';
+
+      // The Spire's administrative terminal
+      if (zid === 'shattered_spire' && visited) {
+        if (G.seeds.spireAllClear) {
+          html += '<div class="text-dim" style="font-size:0.79rem;margin-top:8px;">Emergency flag cleared. The Sentries stand down.</div>';
+        } else if (Exploration.canClearSpireFlag()) {
+          var busy = G.explore.active || G.combat.active;
+          var ok = canAfford(Exploration.spireFlagCost) && !busy;
+          html += '<div style="margin-top:8px;font-size:0.82rem;">' +
+            '<span class="text-dim">Admin terminal, third landing — the Seal opens it. </span>' +
+            '<span class="craft-cost">' + RENDER.costStr(Exploration.spireFlagCost) + '</span> ' +
+            '<button class="btn btn-tech btn-small"' + (ok ? '' : ' disabled') + ' onclick="Exploration.clearSpireFlag()">[CLEAR THE EMERGENCY FLAG]</button>' +
+            '</div>';
+        } else if ((G.relics || []).indexOf('architectsSeal') !== -1) {
+          html += '<div class="text-dim" style="font-size:0.79rem;margin-top:8px;font-style:italic;">There is an administrative terminal somewhere in the base section. You have not found the landing yet.</div>';
+        }
+      }
+
       if (zone.ascii) html += '</div></div>';
       html += '</div>';
     });
@@ -536,7 +578,12 @@ var RENDER = {
     // Controls
     html += '<div class="combat-controls">';
     if (G.combat.active) {
-      if (!G.combat.script) html += '<button class="btn btn-danger" onclick="Combat.flee()">[WITHDRAW]</button>';
+      if (!G.combat.script) {
+        html += '<button class="btn btn-danger" onclick="Combat.flee()">[WITHDRAW]</button>';
+        if (enemy && enemy.calmable) {
+          html += '<button class="btn btn-memory" onclick="Combat.moveSlowly()" title="No loot. Half the lesson. Nobody gets hurt.">' + enemy.calmLabel + '</button>';
+        }
+      }
       else html += '<span class="text-dim" style="font-size:0.82rem;">Hold still.</span>';
       /* Golem repair (prestige 5+, golem down) */
       if (G.prestige.count >= 5 && G.combat.golemHp === 0 && (G.buildings.golemForge || 0) >= 1 && !G.combat.script) {
@@ -1066,7 +1113,7 @@ var RENDER = {
     function row(inner) { return '  ║' + padR(inner, IW) + '║'; }
     function state(id) {
       if (vis.indexOf(id) !== -1) return 'v';
-      if (DATA.zones[id].unlockCondition(G)) return 'u';
+      if (zoneUnlocked(id)) return 'u';
       return 'l';
     }
     var visitedLabels = [];

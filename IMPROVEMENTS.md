@@ -20,16 +20,15 @@ feel the **weight of the society**; make them **excited by how the game develops
 | P5 | Lore order | ✅ |
 | P6 | The Awakening as a sequence | ✅ |
 | P7 | Faster spiral | ✅ |
-| P8 | Nothing dies / Vault handshake / zone mechanics | ✅ a · ✅ b · ◐ c |
-| P9 | Society weight | ✅ a b c e · ☐ d |
+| P8 | Nothing dies / Vault handshake / zone mechanics | ✅ |
+| P9 | Society weight | ✅ |
 | P10 | Show VERITAS before telling | ✅ |
 | P11 | Voice pass | ✅ |
 | P12 | Sound tie-ins | ✅ |
-| P13 | Backdrops / zone art | ◐ |
+| P13 | Backdrops / zone art | ✅ |
 | P14 | The ending | ✅ (Architect Mode deliberately not) |
 
-**Still open:** P8c Care Golems "move slowly" approach and the Sentry all-clear terminal; P9d the Scholar (or a
-traveller) before prestige 3; P13 the Spire cut / Outpost arc-gaps / Vault terminal ring in the zone art.
+**Nothing open.** The last three (P8c, P9d, P13) landed in v1.2.0 the same day.
 
 ---
 
@@ -148,15 +147,22 @@ Per Awakening: costs ×0.85, craft and scout times ×0.80, and N conduits alread
   Momentum → "Your grip is surer than it was." Enemy intro → "Something moves on the road."
 - **b ✅** Vault Automatons are `noncombat`: a five-line scripted handshake (head tilt, three notes, ACCESS
   GRANTED), no damage, shards recovered. Button reads [DESCEND].
-- **c ◐** `Broadcast Authorization` spell vs Mana Wraiths, needs the Architect's Seal — the wraith withdraws.
-  ☐ Care Golems "move slowly" option. ☐ Sentry all-clear at a late admin terminal.
+- **c ✅** `Broadcast Authorization` spell vs Mana Wraiths, needs the Architect's Seal — the wraith withdraws.
+  Care Golems and Protocol Drones are `calmable`: [MOVE SLOWLY] / [HOLD STILL] in combat plays a scripted
+  pass (half the lesson, no loot, 8 s cooldown) and unlocks the *Performing Wellness* margin note. The Spire's
+  admin terminal: with the Architect's Seal and five Spire explores, [CLEAR THE EMERGENCY FLAG] (30 Cores +
+  10 Ether + 5 Shards) — Sentries then check the network and stand down instead of fighting; lore entry
+  *The All-Clear* and the *The All-Clear* margin note (Defense +2).
 
 #### P9 Society weight
 - **a ✅** Four District records (Mira, Jorin, the sound, the last entry) over repeated District explores.
 - **b ✅** Unit 7 patrol log after four Outpost explores.
 - **c ✅** Three letters: the Academy's censure (day one), the merchant's note (the perimeter works on mules),
   the Church pamphlet.
-- **d ☐** The Scholar (or a traveller) before prestige 3.
+- **d ✅** Visitors (`DATA.travellers`, `RENDER.currentVisitor`): once the Scout Post has read three roads,
+  a living person comes up the valley road — H. the salt merchant, a pilgrim, a young man in Academy grey, two
+  riders from the hamlet, a child after a goat, a cartographer, the elderly canon. Six-minute windows, two
+  present then one quiet, so the road feels like a road. Gone after the ending (the valley is full of students).
 - **e ✅** The eastern common room, decoded at the Lattice Core.
 
 #### P10 ✅ Show VERITAS intervening before it is told
@@ -173,9 +179,9 @@ line plus the flavor quote.
 Awakening chord (A-minor stack, ~10 s), decode tick per segment, the Repeater's 3.7 s pulse while on the Relics
 tab, *The Sunken Archive* auto-plays while exploring the District and restores after.
 
-#### P13 ◐ Zone art and backdrops
-✅ Water line under the Care Golem and Protocol Drone in combat. ☐ Spire scar, Outpost arc-gaps, Vault terminal
-ring in the zone art.
+#### P13 ✅ Zone art and backdrops
+Water line under the Care Golem and Protocol Drone in combat. Zone art: the Spire shows the clean cut with the
+wraiths in the base section, the Outpost's walls spark (`*·`), the Vault shows its ring of terminals.
 
 #### P14 ✅ The ending
 Sixth Awakening: the light turns cool, the Terminal scrolls too fast to read (~9 s), clears, "Hello,

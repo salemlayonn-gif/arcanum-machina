@@ -15,7 +15,7 @@ var Exploration = {
       return;
     }
     var zone = DATA.zones[zoneId];
-    if (!zone || !zone.unlockCondition(G)) return;
+    if (!zone || !zoneUnlocked(zoneId)) return;
 
     var duration = getExploreTime(zoneId);
     G.explore.active    = true;
@@ -36,6 +36,31 @@ var Exploration = {
     if (G.buffs) G.buffs.exploreSpeedBonus = 0;
     if (typeof Music !== 'undefined') Music.autoRestore();
     addLog('You turn back.', '');
+    RENDER.markDirty();
+  },
+
+  /* The Spire's administrative terminal (Appendix A): clear the emergency flag the Sentries have held for a thousand years. */
+  spireFlagCost: { arcaneCore: 30, etherCell: 10, memoryShard: 5 },
+  canClearSpireFlag: function() {
+    if (G.seeds.spireAllClear) return false;
+    if ((G.relics || []).indexOf('architectsSeal') === -1) return false;
+    if (((G.explore.zoneRuns || {}).shattered_spire || 0) < 5) return false;
+    return true;
+  },
+  clearSpireFlag: function() {
+    if (!Exploration.canClearSpireFlag()) return;
+    if (G.explore.active || G.combat.active || G.awakening || G.ending) return;
+    if (!canAfford(Exploration.spireFlagCost)) {
+      addLog('The terminal needs power you do not have yet.', '');
+      return;
+    }
+    spendResources(Exploration.spireFlagCost);
+    G.seeds.spireAllClear = true;
+    addLog('Third landing of the base section. The door recognises the Seal before you have finished raising it.', 'log-lore');
+    addLog('emergency_flag: SET. The terminal asks for confirmation twice. You confirm twice.', 'log-lore');
+    addLog('emergency_flag: ---. Somewhere below, something lowers its weapons.', 'log-important');
+    showNotification('◆ The Sentries stand down.', 'notif-lore', 7000);
+    if (typeof Sounds !== 'undefined') Sounds.loreUnlocked();
     RENDER.markDirty();
   },
 
