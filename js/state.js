@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.5.0',
+  version: '1.6.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -132,6 +132,13 @@ var G = {
   /* A scene in progress (transient): { id, start, shown } */
   scene: null,
 
+  /* The sealed cabinet in the side chamber: four days of directed current (kept through Awakenings) */
+  cabinet: { noticed: false, steps: 0, lastStepAt: 0, opened: false },
+
+  /* Volumes already seen on the shelf (kept); new ones since the last visit (transient) */
+  libraryKnown: [],
+  libraryNew: [],
+
   /* UI state */
   ui: {
     screen: 'archive',
@@ -157,6 +164,7 @@ var G = {
     prestigeVisible: false,
     codexVisible: false,
     relicsVisible: false,
+    libraryVisible: false,
     ended: false
   },
 
@@ -509,6 +517,8 @@ function saveGame() {
       seeds: G.seeds,
       golemName: G.golemName,
       golemSeen: G.golemSeen,
+      cabinet: G.cabinet,
+      libraryKnown: G.libraryKnown,
       veritasHint: G.veritasHint,
       veritasTransmission: G.veritasTransmission,
       savedAt: Date.now()
@@ -537,7 +547,7 @@ function loadGame() {
     G.stats     = Object.assign({totalMana:0,enemiesDefeated:0,exploreRuns:0,coresCrafted:0,itemsCrafted:0,prestigeCount:0}, data.stats);
     G.loreUnlocked = data.loreUnlocked || [];
     G.prestige  = Object.assign({count:0,resonance:0,totalEarned:0,multiplier:1.0}, data.prestige);
-    G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false,ended:false}, data.flags);
+    G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false,libraryVisible:false,ended:false}, data.flags);
     G.buffs     = { attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false };
     G.veritasHint = Object.assign({ lastTime: 0, count: 0 }, data.veritasHint || {});
     G.veritasTransmission = Object.assign({ lastTime: 0, count: 0 }, data.veritasTransmission || {});
@@ -551,6 +561,9 @@ function loadGame() {
     G.seeds    = data.seeds || {};
     G.golemName = heroNameSafe(data.golemName || '');
     G.golemSeen = data.golemSeen || {};
+    G.cabinet = Object.assign({ noticed: false, steps: 0, lastStepAt: 0, opened: false }, data.cabinet || {});
+    G.libraryKnown = data.libraryKnown || [];
+    G.libraryNew = [];
     if (G.loreUnlocked.length && !G.flags.loreVisible) G.flags.loreVisible = true;
 
     /* Offline progress — and the notebook page for it */
@@ -633,6 +646,7 @@ function resetForPrestige(keepDeep) {
     prestigeVisible: false,
     codexVisible: true,
     relicsVisible: G.relics.length > 0,
+    libraryVisible: !!(G.seeds && G.seeds.cabinetOpened),
     ended: !!G.flags.ended
   };
   G.gameLog   = [];
@@ -643,6 +657,20 @@ function resetForPrestige(keepDeep) {
   G.relicsNew   = [];
   G.golemSeen   = {};
   G.scene       = null;
+}
+
+/* Volumes on the shelf right now */
+function libraryUnlocked() {
+  if (!G.flags.libraryVisible) return [];
+  return DATA.library.filter(function(v) { try { return !!v.unlock(G); } catch(e) { return false; } });
+}
+
+/* The cabinet wants full capacitors and a day between attempts */
+var CABINET_REST_MS = 20 * 3600 * 1000;
+function cabinetRestLeft(now) {
+  var c = G.cabinet;
+  if (!c || !c.lastStepAt) return 0;
+  return Math.max(0, CABINET_REST_MS - ((now || Date.now()) - c.lastStepAt));
 }
 
 function golemName() {

@@ -12,6 +12,13 @@ Revisió del joc contra el llibre, amb l'estat de cada proposta: [`IMPROVEMENTS.
 El llibre (`../arcanum-machina-book`) és el cànon: veu d'en Salem (precisa, seca, mai melodramàtica),
 res no «mor» en combat, els Vault Automatons no es combaten.
 
+**El llibre és públic** des del 2026-09-11: repo `salemlayonn-gif/arcanum-machina-book` (compte personal,
+mateixa configuració de credencials) publicat amb GitHub Pages a
+<https://salemlayonn-gif.github.io/arcanum-machina-book/>. El `00_bible.md` i el `27_consistency_notes.md`
+són al `.gitignore` a propòsit (documents de treball, «not for publication»). La Biblioteca del joc
+(`DATA.library`) enllaça cada capítol amb l'àncora del lector: si es reordena el llibre, cal revisar les
+àncores — el harness comprova que totes són úniques i vàlides, però no que existeixin al lector.
+
 **Regles:** actualitzar `G.version` (a `state.js`) i afegir una entrada al `DEVLOG.md` a cada sessió amb
 canvis. Sense toasts d'idle-game (cap «Unlocked!»); les cadenes noves en la veu del llibre.
 

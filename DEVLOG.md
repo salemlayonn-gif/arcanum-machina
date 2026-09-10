@@ -1,5 +1,32 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-11 (night) — v1.6.0: the Library, and the book goes online
+
+**The book is published.** New public repo `salemlayonn-gif/arcanum-machina-book` with GitHub Pages at
+<https://salemlayonn-gif.github.io/arcanum-machina-book/>. The bible (`00_bible.md`, marked "not for
+publication") and the working consistency notes are `.gitignore`d — the repo holds the 26 chapter files and
+the single-page reader. The two harmonising edits the consistency notes called for are applied in both the
+markdown and the reader: the Guardian schematic hangs **in the library wing**, and the Academy's twelfth year
+is **under its formal charter** (it was an academy in all but name for twenty years before).
+
+**The side quest — the Sealed Cabinet.** From Chapter One: the cabinet that resisted for four days and opened
+only to sustained, directed current. Once the Memory Terminal exists, the Archive screen notices it.
+`[PUSH CURRENT INTO THE CONTACT]` needs the capacitors ≥90% full, empties them, and advances a four-step
+gauge — **once per 20 real hours**, so it takes four days. Each day has its own line; the fourth opens it.
+Inside is not a manual but a rack of empty slots, exactly the right number, for records not yet written.
+Record *The Sealed Cabinet*, margin note *The Slots Fit*.
+
+**The Library** (`[LIBRARY]` tab, key 8, `DATA.library` = 31 volumes). ASCII shelving grouped by part; each
+spine is a chapter and opens it on the live book in a new tab. It autofills story-wise: Part One by early
+milestones, Part Two per place reached, the five Fragments as those shards **finish decoding**, Part Four one
+per Awakening, the Codex/Epilogue/Appendix E after the ending, the Bestiary when every zone has been walked
+and 100 encounters resolved, the Relics at 10 relics, the Glossary at cycle 3, Appendix D when the common-room
+shard decodes. Two spines sit there from the first day and **will not resolve** (`░▒░░░`, cycling) — the
+Foreword, written in Year 37, and the book itself. The Archive panel grows a `║║▒▒▒▒ {shelf}` row. The first
+look fills the rack in one line; later volumes announce themselves one at a time.
+
+---
+
 ## Session 2026-09-11 (later) — v1.5.0: the hymn, the chairs, a name, the record
 
 - **The hymn** (`Exploration.attendHymn`): at the Cathedral, once every ten minutes of play, a 90 s wait

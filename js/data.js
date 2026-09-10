@@ -1344,6 +1344,14 @@ DATA.annotations = [
     bonusDesc: 'Max HP +10'
   },
   {
+    id: 'librarian',
+    title: 'The Slots Fit',
+    note: 'The slots fit. I have stopped being surprised by that and started being unsettled by it instead.',
+    condition: function(G) { return !!(G.seeds || {}).cabinetOpened; },
+    bonus: {},
+    bonusDesc: null
+  },
+  {
     id: 'named',
     title: 'It Has a Name',
     note: 'I named it. It did not react. It did not need to. I find I address it by the name anyway, in the field, under my breath, the way you do.',
@@ -2015,6 +2023,32 @@ They gathered. In the last hours before a world they had built was deliberately 
 I do not think there were speeches. I think there was the specific comfort of not being alone at the end of something.
 
 The chairs are still here.`
+  },
+
+  {
+    id: 'the_cabinet',
+    title: 'The Sealed Cabinet',
+    chapter: 'Chapter I: The Relic',
+    unlockCondition: function(G) { return !!(G.seeds || {}).cabinetOpened; },
+    asciiColor: 'text-tech',
+    ascii: `
+  ╔══════════════════╗
+  ║ ▒▒▒▒ ▒▒▒▒ ▒▒▒▒   ║
+  ║ ▒▒▒▒ ▒▒▒▒ ▒▒▒▒   ║
+  ║ ▒▒▒▒ ▒▒▒▒ ░░░░   ║
+  ╚═══════[⊙]════════╝
+   the contact point  `,
+    text: `The sealed cabinet in the side chamber opened on the fourth day.
+
+The release was not mechanical. It wanted a sustained, directed output of ley current through a contact point — and it wanted it four times, on four days, as if to be sure. The first test, I understand now, of whether the person trying to open it could operate what was inside.
+
+What was inside was not a manual. It was a rack. Empty slots in the same pale alloy, evenly spaced, exactly the right number for something. Labelled in the ancestral script with numerals, and nothing else.
+
+A library for records that had not been written yet.
+
+One slot at the bottom already held something. Its spine would not resolve, however I turned the light. I have put it back where it was.
+
+I have started putting my notebooks on the rack. The slots fit.`
   },
 
   {
@@ -2692,6 +2726,51 @@ DATA.travellers = [
     text: '"In forty years of sitting with the dying," she says, "I have felt the current be gentle. Was I imagining it?" No, you say. She nods as though she had known, and had only needed one other person to say it.'
   }
 ];
+
+/* ── THE LIBRARY — a rack for records that had not been written yet ──
+   Each volume is a chapter of the book, online. It appears on the shelf when the story has reached it. */
+DATA.bookUrl = 'https://salemlayonn-gif.github.io/arcanum-machina-book/';
+(function() {
+  function has(id)     { return function(G) { return G.loreUnlocked.indexOf(id) !== -1; }; }
+  function decoded(id) { return function(G) { return G.loreUnlocked.indexOf(id) !== -1 && isLoreDecoded(id); }; }
+  function walked(z)   { return function(G) { return ((G.explore.zoneRuns || {})[z] || 0) >= 1; }; }
+  function cycles(n)   { return function(G) { return G.prestige.count >= n; }; }
+  function ended(G)    { return !!G.flags.ended; }
+  DATA.library = [
+    { id: 'prologue', anchor: '#prologue', num: '·',   part: 1, title: 'Prologue — The Relic',            unlock: function() { return true; } },
+    { id: 'ch01',     anchor: '#ch01',     num: 'I',   part: 1, title: 'First Steps',                     unlock: function(G) { return G.annotations.indexOf('the_first_ward') !== -1; } },
+    { id: 'ch02',     anchor: '#ch02',     num: 'II',  part: 1, title: 'The Tap',                         unlock: has('on_mana') },
+    { id: 'ch03',     anchor: '#ch03',     num: 'III', part: 1, title: 'The Language of Machines',        unlock: has('on_scrap') },
+    { id: 'ch04',     anchor: '#ch04',     num: 'IV',  part: 1, title: 'The Road Is Not Safe',            unlock: has('first_fight') },
+    { id: 'ch05',     anchor: '#ch05',     num: 'V',   part: 1, title: 'Synthesis',                       unlock: has('first_core') },
+    { id: 'ch06',     anchor: '#ch06',     num: 'VI',  part: 2, title: 'The Overgrown Road',              unlock: walked('overgrown_road') },
+    { id: 'ch07',     anchor: '#ch07',     num: 'VII', part: 2, title: 'The Ruined Outpost',              unlock: walked('ruined_outpost') },
+    { id: 'ch08',     anchor: '#ch08',     num: 'VIII',part: 2, title: 'On the Broken Helpers',           unlock: has('district_arrival') },
+    { id: 'ch09',     anchor: '#ch09',     num: 'IX',  part: 2, title: 'The Shattered Spire',             unlock: has('spire_cut') },
+    { id: 'ch10',     anchor: '#ch10',     num: 'X',   part: 2, title: 'The Deep Vault',                  unlock: has('vault_access') },
+    { id: 'frag1',    anchor: '#frag1',    num: '1',   part: 3, title: 'Fragment I — Cycle 1,847',        unlock: decoded('memory_shard_first') },
+    { id: 'frag2',    anchor: '#frag2',    num: '2',   part: 3, title: 'Fragment II — Cycle 8,203',       unlock: decoded('prestige1_lore') },
+    { id: 'frag3',    anchor: '#frag3',    num: '3',   part: 3, title: 'Fragment III — Lirien Vaes',      unlock: decoded('prestige2_lore') },
+    { id: 'frag4',    anchor: '#frag4',    num: '4',   part: 3, title: 'Fragment IV — The Final Coherent Log', unlock: decoded('prestige5_lore') },
+    { id: 'frag5',    anchor: '#frag5',    num: '5',   part: 3, title: 'Fragment V — The Echo Stone',     unlock: decoded('veritas_fragment') },
+    { id: 'ch11',     anchor: '#ch11',     num: 'XI',  part: 4, title: 'The First Awakening',             unlock: cycles(1) },
+    { id: 'ch12',     anchor: '#ch12',     num: 'XII', part: 4, title: 'The Second Awakening',            unlock: cycles(2) },
+    { id: 'ch13',     anchor: '#ch13',     num: 'XIII',part: 4, title: 'The Third Awakening',             unlock: cycles(3) },
+    { id: 'ch14',     anchor: '#ch14',     num: 'XIV', part: 4, title: 'The Fourth Awakening',            unlock: cycles(4) },
+    { id: 'ch15',     anchor: '#ch15',     num: 'XV',  part: 4, title: 'The Fifth Awakening',             unlock: cycles(5) },
+    { id: 'ch16',     anchor: '#ch16',     num: 'XVI', part: 4, title: 'The Sixth Awakening',             unlock: cycles(6) },
+    { id: 'codex',    anchor: '#codex',    num: '✦',   part: 5, title: 'The Codex — The Inner Record',    unlock: ended },
+    { id: 'epilogue', anchor: '#epilogue', num: '∞',   part: 5, title: 'Epilogue — The Record',           unlock: ended },
+    { id: 'appa',     anchor: '#appendix-a', num: 'A', part: 6, title: 'Appendix A — Bestiary of the Ruins', unlock: function(G) { var zr = G.explore.zoneRuns || {}; return G.stats.enemiesDefeated >= 100 && DATA.zoneOrder.every(function(z) { return (zr[z] || 0) >= 1; }); } },
+    { id: 'appb',     anchor: '#appendix-b', num: 'B', part: 6, title: 'Appendix B — The Relics',          unlock: function(G) { return (G.relics || []).length >= 10; } },
+    { id: 'appc',     anchor: '#appendix-c', num: 'C', part: 6, title: 'Appendix C — A Glossary of the First Age', unlock: cycles(3) },
+    { id: 'appd',     anchor: '#appendix-d', num: 'D', part: 6, title: 'Appendix D — The Architects Who Agreed', unlock: decoded('common_room') },
+    { id: 'appe',     anchor: '#appendix-e', num: 'E', part: 6, title: 'Appendix E — On the Nature of Resonance', unlock: ended },
+    /* Two that were on the shelf before anything else was written */
+    { id: 'foreword', anchor: '#foreword', num: 'F',   part: 0, title: 'Foreword — Year 37',              unlock: ended, sealed: true },
+    { id: 'record',   anchor: '',          num: '★',   part: 0, title: 'A Record in Full',                unlock: ended, sealed: true }
+  ];
+})();
 
 /* ── SCENES — a room, some lines, nothing to win ── */
 DATA.scenes = {

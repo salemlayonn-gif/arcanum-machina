@@ -104,10 +104,13 @@ Combat.startFight('shattered_spire');
 assert(G.combat.enemyId==='architect_sentry' && G.combat.script && G.combat.script.resolve==='stand', 'sentry stands down');
 for (let i=0;i<5;i++) Combat.processTurn(); assert(G.combat.result==='pass', 'sentry encounter passes'); Combat.clearResult();
 Math.random=realRandom;
+const realIsNight = isNight; isNight = () => false;   // the tests run at whatever hour it happens to be
 G.stats.exploreRuns=3; G.playTime=0; G.flags.ended=true; assert(RENDER.currentVisitor()===null, 'no visitors after the ending');
 G.flags.ended=false; assert(RENDER.currentVisitor()&&RENDER.currentVisitor().who.indexOf('salt')!==-1, 'first visitor is H.');
 G.playTime=2*360+1; assert(RENDER.currentVisitor()===null, 'third window: road quiet');
 G.playTime=3*360+1; assert(RENDER.currentVisitor().who.indexOf('pilgrim')!==-1, 'next visitor is the pilgrim');
+isNight = () => true; assert(RENDER.currentVisitor()===null, 'nobody comes up the road at night');
+isNight = realIsNight;
 G.playTime=0;
 
 console.log('G. renderers');
@@ -200,6 +203,41 @@ assert(G.combat.log.some(l=>l.msg==='Ferro steps up beside you.') && !G.combat.l
 Combat.flee(); Combat.clearResult(); Math.random=realRandom;
 let rec = buildRecord();
 assert(rec.indexOf('ARCANUM MACHINA — A RECORD IN FULL')===0 && rec.indexOf('The Hymn')!==-1 && rec.indexOf('The Chair')!==-1 && rec.indexOf('Companion: Ferro')!==-1 && rec.indexOf('IV. THE AWAKENINGS')!==-1, 'record contains title, records and companion');
+
+console.log('M. the sealed cabinet and the library');
+G.cabinet = { noticed:false, steps:0, lastStepAt:0, opened:false }; G.flags.libraryVisible=false; G.seeds.cabinetOpened=false; G.libraryKnown=[]; G.libraryNew=[];
+G.buildings = { manaConduit:2, memoryTerminal:1 }; Engine.checkBuildingCapEffects(); G.gameLog=[];
+Engine.checkFlagUnlocks(); assert(G.cabinet.noticed && G.gameLog[0].msg.indexOf('sealed cabinet')!==-1, 'cabinet noticed once the Terminal exists');
+G.res.mana = 10; pushCabinet(); assert(G.cabinet.steps===0, 'refuses without full capacitors');
+G.res.mana = G.resCap.mana; pushCabinet(); assert(G.cabinet.steps===1 && G.res.mana===0, 'first day: drains the capacitors');
+G.res.mana = G.resCap.mana; pushCabinet(); assert(G.cabinet.steps===1, 'refuses the same day');
+const realDateNow = Date.now; let dayOffset = 0; Date.now = () => realDateNow() + dayOffset;
+for (let d = 1; d <= 3; d++) { dayOffset = d * 21 * 3600 * 1000; G.res.mana = G.resCap.mana; pushCabinet(); }
+assert(G.cabinet.opened && G.flags.libraryVisible && G.seeds.cabinetOpened && G.cabinet.steps===4, 'opens on the fourth day');
+Date.now = realDateNow;
+Engine.checkLoreUnlocks(); assert(G.loreUnlocked.indexOf('the_cabinet')!==-1, 'the cabinet record');
+G.loreUnlocked = ['on_mana','on_scrap']; G.annotations = ['the_first_ward']; G.prestige.count = 0; G.flags.ended = false; G.explore.zoneRuns = {}; G.decoding = {};
+let vols = libraryUnlocked().map(v=>v.id);
+assert(vols.indexOf('prologue')!==-1 && vols.indexOf('ch01')!==-1 && vols.indexOf('ch02')!==-1 && vols.indexOf('ch03')!==-1 && vols.indexOf('ch04')===-1 && vols.indexOf('foreword')===-1, 'shelf: prologue + I–III, not IV, foreword sealed');
+G.prestige.count = 2; G.explore.zoneRuns = { overgrown_road: 3 }; vols = libraryUnlocked().map(v=>v.id);
+assert(vols.indexOf('ch06')!==-1 && vols.indexOf('ch11')!==-1 && vols.indexOf('ch12')!==-1 && vols.indexOf('ch13')===-1, 'shelf: road walked, two Awakenings');
+G.flags.ended = true; vols = libraryUnlocked().map(v=>v.id); assert(vols.indexOf('foreword')!==-1 && vols.indexOf('record')!==-1 && vols.indexOf('epilogue')!==-1, 'after the ending: foreword, record, epilogue');
+G.flags.ended = false;
+let shelf = RENDER.screenLibrary();
+assert(shelf.indexOf('spine-link')!==-1 && shelf.indexOf('spine-sealed')!==-1 && shelf.indexOf('spine-empty')!==-1 && shelf.indexOf('THE LIBRARY WING')!==-1, 'shelf renders links, sealed and empty slots');
+let shelfLines = strip(shelf.split('<pre')[1].split('</pre>')[0].replace(/^[^>]*>/, '')).split('\n').filter(l=>l.indexOf('║')===0 || l.indexOf('╔')===0 || l.indexOf('╠')===0 || l.indexOf('╚')===0);
+assert([...new Set(shelfLines.map(l=>l.length))].length===1, 'shelf lines equal width: ' + [...new Set(shelfLines.map(l=>l.length))].join(','));
+G.gameLog=[]; Engine._libraryTick = 9; Engine.checkLibrary();
+assert(G.libraryNew.length>0 && G.libraryKnown.length===G.libraryNew.length, 'new volumes noticed');
+assert(G.gameLog.length===1 && G.gameLog[0].msg.indexOf('slots filled')!==-1, 'first fill is one line, not one per volume');
+G.gameLog=[]; G.prestige.count=3; Engine._libraryTick=9; Engine.checkLibrary();
+assert(G.gameLog.length===2 && G.gameLog.every(l=>l.msg.indexOf('A volume on the shelf')!==-1), 'later volumes announce themselves one by one (cycle 3 = chapter + glossary)');
+let pw = strip(RENDER.archivePanel({})).split('\n').slice(1,10);
+assert([...new Set(pw.map(l=>l.length))].length===1, 'archive panel keeps its width with the shelf row: ' + [...new Set(pw.map(l=>l.length))].join(','));
+assert(strip(RENDER.archivePanel({})).indexOf('shelf')!==-1, 'shelf appears in the Archive panel');
+assert(DATA.bookUrl.indexOf('github.io/arcanum-machina-book/')!==-1 && DATA.library.length===31, 'book url and 31 volumes');
+let anchors = DATA.library.filter(v=>v.anchor).map(v=>v.anchor);
+assert(anchors.length===30 && anchors.every(a=>/^#[a-z0-9-]+$/.test(a)) && new Set(anchors).size===30, 'every volume has a unique valid anchor');
 
 console.log('I. content sanity');
 assert(DATA.veritasTransmissions.every(t=>t.text.startsWith('PARTIAL')), 'no Caldris in transmissions');

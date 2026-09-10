@@ -77,6 +77,7 @@ var RENDER = {
       { id: 'prestige',label: '[AWAKENING]',show: G.flags.prestigeVisible },
       { id: 'codex',   label: G.annotationsNew.length > 0 ? '[CODEX ◆]' : '[CODEX]', show: G.flags.codexVisible, notify: G.annotationsNew.length > 0 },
       { id: 'relics',  label: '[RELICS]',   show: G.flags.relicsVisible },
+      { id: 'library', label: G.libraryNew.length > 0 ? '[LIBRARY ◆]' : '[LIBRARY]', show: G.flags.libraryVisible, notify: G.libraryNew.length > 0 },
       { id: 'config',  label: '[CONFIG]',   always: true }
     ];
 
@@ -126,6 +127,7 @@ var RENDER = {
       case 'prestige': html = RENDER.screenPrestige(); break;
       case 'codex':    html = RENDER.screenCodex();    break;
       case 'relics':   html = RENDER.screenRelics();   break;
+      case 'library':  html = RENDER.screenLibrary();  break;
       case 'config':   html = RENDER.screenConfig();   break;
       default:         html = RENDER.screenArchive();  break;
     }
@@ -154,6 +156,11 @@ var RENDER = {
     // Search the ruins by hand (until the Scout Post gives you roads)
     if ((G.buildings.scoutPost || 0) < 1) {
       html += RENDER.renderScavenge();
+    }
+
+    // The sealed cabinet in the side chamber
+    if (G.cabinet && G.cabinet.noticed && !G.cabinet.opened) {
+      html += RENDER.renderCabinet();
     }
 
     // Buildings
@@ -289,6 +296,31 @@ var RENDER = {
     if ((G.buildings.manaConduit || 0) >= 3) return 'Lines of pale light in the walls that have not been visible in darkness for a thousand years. You sit on the floor and look at them.';
     if ((G.buildings.manaConduit || 0) >= 1) return 'The ley current is stable. Measurable. The conduit works the way the schematics promised. The old ones were not liars.';
     return 'The relic sits on a cleared stone in the side chamber. It has not pulsed again. It does not need to. The air smells of old metal and lightning.';
+  },
+
+  renderCabinet: function() {
+    var c = G.cabinet, now = Date.now();
+    var rest = cabinetRestLeft(now);
+    var full = G.res.mana >= G.resCap.mana * 0.9;
+    var gauge = '';
+    for (var i = 0; i < 4; i++) gauge += (i < c.steps ? '■' : '□');
+    var state, disabled = false;
+    if (rest > 0) { state = 'The contact needs to rest. ' + (rest > 3600000 ? Math.ceil(rest / 3600000) + ' hours' : 'less than an hour') + '.'; disabled = true; }
+    else if (!full) { state = 'It wants everything the capacitors hold. ' + fmt(G.res.mana) + ' / ' + fmt(G.resCap.mana) + '.'; disabled = true; }
+    else state = 'The capacitors are full. Day ' + (c.steps + 1) + '.';
+    var art = c.steps === 0
+      ? ' ╔════════╗\n ║ ▒▒ ▒▒  ║\n ║ ▒▒ ▒▒  ║\n ╚═══[⊙]══╝'
+      : ' ╔════════╗\n ║ ▒▒ ▒▒  ║\n ║ ▒▒ ▒▒  ║\n ╚═══[' + (c.steps >= 3 ? '◉' : '⊙') + ']══╝';
+    return '<div class="section">' +
+      '<div class="section-header">── THE SEALED CABINET ──────────────────────────</div>' +
+      '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">' +
+        '<pre class="ascii-art text-tech" style="margin:0;flex-shrink:0;">' + art + '</pre>' +
+        '<div style="flex:1;">' +
+          '<div class="bld-desc" style="margin-bottom:6px;">Side chamber. Pale alloy. No lock, no hinge you can find. The release wants a sustained, directed output of ley current through the contact point — and, it seems, wants it more than once.</div>' +
+          '<div style="font-size:0.86rem;margin-bottom:6px;"><span class="text-dim">Days:</span> <span class="text-tech" style="letter-spacing:3px;">' + gauge + '</span> <span class="text-dim">· ' + state + '</span></div>' +
+          '<button class="btn btn-tech"' + (disabled ? ' disabled' : '') + ' onclick="pushCabinet()">[PUSH CURRENT INTO THE CONTACT]</button>' +
+        '</div>' +
+      '</div></div>';
   },
 
   renderScavenge: function() {
@@ -989,6 +1021,72 @@ var RENDER = {
     return html;
   },
 
+  /* ── THE LIBRARY ─────────────────────── */
+  screenLibrary: function() {
+    G.libraryNew = [];
+    var open = libraryUnlocked().map(function(v) { return v.id; });
+    var total = DATA.library.length, count = open.length;
+    var frame = Math.floor(Date.now() / 300);
+
+    function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
+    function padC(s, w) { var l = Math.floor((w - s.length) / 2); return rep(' ', l) + s + rep(' ', w - s.length - l); }
+    function spine(v) {
+      var isOpen = open.indexOf(v.id) !== -1;
+      if (isOpen) return '<a class="spine-link" href="#" title="' + escapeHtml(v.title) + '" onclick="openBook(\'' + v.id + '\');return false;">│' + padC(v.num, 3) + '│</a>';
+      if (v.sealed) return '<span class="spine-sealed" title="It will not resolve, however you turn the light.">' + (reducedMotion() ? '░░░░░' : ['░░░░░', '░▒░░░', '░░░▒░'][frame % 3]) + '</span>';
+      return '<span class="spine-empty">▒▒▒▒▒</span>';
+    }
+    var parts = [
+      { n: 1, label: 'PART ONE — THE SCHOLAR ALONE' },
+      { n: 2, label: 'PART TWO — THE WORLD OUTSIDE' },
+      { n: 3, label: 'PART THREE — THE RECOVERED ARCHIVES' },
+      { n: 4, label: 'PART FOUR — THE AWAKENINGS' },
+      { n: 5, label: 'PART FIVE — AND AFTER' },
+      { n: 6, label: 'APPENDICES' },
+      { n: 0, label: 'THE TWO THAT WERE ALREADY THERE' }
+    ];
+    var W = 46;
+    var out = [];
+    out.push('╔' + rep('═', W) + '╗');
+    parts.forEach(function(p, pi) {
+      var vols = DATA.library.filter(function(v) { return v.part === p.n; });
+      var rowHtml = ' ', rowLen = 1;
+      vols.forEach(function(v) { rowHtml += spine(v) + ' '; rowLen += 6; });
+      out.push('║' + rowHtml + rep(' ', W - rowLen) + '║');
+      var label = ' <span class="pnl-dim">' + p.label + '</span>';
+      out.push('║' + label + rep(' ', W - 1 - p.label.length) + '║');
+      out.push((pi < parts.length - 1 ? '╠' : '╚') + rep('═', W) + (pi < parts.length - 1 ? '╣' : '╝'));
+    });
+    out.push('  ' + rep('· ', 22) + ' <span class="pnl-dim">dust</span>');
+
+    var html = '<div class="section">';
+    html += '<div class="section-header">── THE LIBRARY WING ────────────────────────────</div>';
+    html += '<div class="section-flavor">A rack for records that had not been written yet. ' + count + ' of ' + total + ' slots filled.' +
+      (count < 8 ? ' The shelf is longer than what you have found.' : (count < total ? ' The slots fit.' : ' Every slot. The book is on the shelf.')) + '</div>';
+    html += '<pre class="archive-panel shelf">' + out.join('\n') + '</pre>';
+    html += '<div class="text-dim" style="font-size:0.79rem;margin-top:4px;">Each volume opens the chapter, in the book, in a new tab. The shelf knows what you have not done yet.</div>';
+    html += '</div>';
+
+    html += '<div class="section"><div class="section-header">── VOLUMES ─────────────────────────────────────</div>';
+    var lastPart = null;
+    DATA.library.forEach(function(v) {
+      if (v.part !== lastPart) {
+        lastPart = v.part;
+        var p = parts.filter(function(x) { return x.n === v.part; })[0];
+        html += '<div class="relic-zone-name" style="margin-top:10px;">' + p.label + '</div>';
+      }
+      var isOpen = open.indexOf(v.id) !== -1;
+      if (isOpen) {
+        html += '<div class="annotation-entry"><div class="annotation-title"><span class="text-tech">' + escapeHtml(v.num) + '</span> · ' + escapeHtml(v.title) +
+          ' <a class="btn btn-small btn-arcane" style="margin-left:8px;text-decoration:none;" href="#" onclick="openBook(\'' + v.id + '\');return false;">[READ]</a></div></div>';
+      } else {
+        html += '<div class="annotation-entry annotation-locked"><div class="annotation-title">' + escapeHtml(v.num) + ' · — — —</div></div>';
+      }
+    });
+    html += '</div>';
+    return html;
+  },
+
   /* ── CONFIG SCREEN ───────────────────── */
   screenConfig: function() {
     var html = '';
@@ -1180,7 +1278,12 @@ var RENDER = {
     var figures = '';
     if (rooms && G.prestige.count >= 2) figures += '[≋] ';
     if (rooms && G.prestige.count >= 3) figures += '†  ';
-    lines.push(row(rep(' ', W - figures.length - 2) + figures));
+    var shelf = '';
+    if (rooms && G.flags.libraryVisible) {
+      var vols = libraryUnlocked().length, spines = Math.min(6, Math.ceil(vols / 5));
+      shelf = '  ' + rep('║', spines) + rep('▒', 6 - spines) + ' {shelf}';
+    }
+    lines.push(row(shelf + rep(' ', Math.max(0, W - vlen(shelf) - figures.length - 2)) + figures));
     lines.push('╠' + rep('═', W) + '╣');
 
     function item(built, name, count) {

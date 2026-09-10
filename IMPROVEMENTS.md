@@ -235,9 +235,9 @@ Suggested after v1.3.0; Robert picked 1, 3, 5 and 7.
 | 7 | Night in the valley (real clock) | ✅ |
 | 8 | Architect Mode as the prequel (play Lirien, disassemble the Archive) | ☐ L |
 | 9 | Export your run as "A Record in Full" | ✅ v1.5.0 |
-| 10 | Read the book from inside the game after the ending | ☐ |
-| 11 | PWA + GitHub Pages | ☐ |
-| 12 | Mobile pass for the 48-column panel | ☐ |
+| 10 | Read the book from inside the game | ✅ v1.6.0 — the Library, unlocked by the Sealed Cabinet side quest; book published at [Pages](https://salemlayonn-gif.github.io/arcanum-machina-book/) |
+| 11 | PWA + GitHub Pages for the game | ☐ |
+| 12 | Mobile pass for the 48-column panel | ☐ parked at Robert's request |
 
 **Pacing, measured (greedy continuous play, seed 12345):** 6 h 35 m to the ending; cycle 1 = 1 h 46 m (10 min
 of it with nothing to do), then 1h19 / 1h11 / 1h24 / 35m / 17m. First conduit 4 m, Scout Post 10 m, Terminal

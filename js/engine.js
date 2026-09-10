@@ -395,8 +395,77 @@ var Engine = {
     if (!G.flags.heroVisible && G.stats.totalMana >= 20) {
       G.flags.heroVisible = true;
     }
+    if ((G.buildings.memoryTerminal || 0) >= 1 && G.cabinet && !G.cabinet.noticed) {
+      G.cabinet.noticed = true;
+      addLog('There is a sealed cabinet in the side chamber. Three days of trying, and it has not moved. The release is not mechanical.', 'log-lore');
+      showNotification('◆ A sealed cabinet', 'notif-lore', 6000);
+    }
+    Engine.checkLibrary();
+  },
+
+  /* New volumes on the shelf since the last look */
+  _libraryTick: 0,
+  checkLibrary: function() {
+    if (!G.flags.libraryVisible) return;
+    if ((++Engine._libraryTick) % 10 !== 0) return;
+    if (!G.libraryKnown) G.libraryKnown = [];
+    /* The first look fills the rack with everything already done — one line, not twenty */
+    var first = G.libraryKnown.length === 0;
+    var added = 0;
+    libraryUnlocked().forEach(function(v) {
+      if (G.libraryKnown.indexOf(v.id) !== -1) return;
+      G.libraryKnown.push(v.id);
+      if (G.libraryNew.indexOf(v.id) === -1) G.libraryNew.push(v.id);
+      added++;
+      if (!first) {
+        addLog('A volume on the shelf: ' + v.title + '. The slot fits.', 'log-lore');
+        if (typeof Sounds !== 'undefined') Sounds.tick();
+      }
+    });
+    if (first && added) {
+      addLog('You put your notebooks on the rack. ' + added + ' slot' + (added === 1 ? '' : 's') + ' filled. The rest of the shelf is longer than what you have written.', 'log-lore');
+      if (typeof Sounds !== 'undefined') Sounds.loreUnlocked();
+    }
   }
 };
+
+/* ── THE SEALED CABINET ────────────────── */
+function pushCabinet() {
+  var c = G.cabinet;
+  if (!c || !c.noticed || c.opened) return;
+  if (G.awakening || G.ending || G.scene) return;
+  var now = Date.now();
+  if (cabinetRestLeft(now) > 0) { addLog('The contact needs to rest. Tomorrow.', ''); return; }
+  if (G.res.mana < G.resCap.mana * 0.9) { addLog('It wants everything the capacitors hold. They are not full.', ''); return; }
+  G.res.mana = 0;
+  c.steps++;
+  c.lastStepAt = now;
+  if (typeof Sounds !== 'undefined') Sounds.build('leyTap', 0);
+  var lines = [
+    'You push the current through the contact point. The channel buzzes and fails. The device waits, and begins the step again from the beginning.',
+    'Closer. Something inside shifts a quarter turn and stops. The capacitors are empty. Tomorrow.',
+    'The contact holds the current for a full minute before it slips. You can hear, very faintly, something on the other side of the door settle.',
+    'The fourth day. The current holds. The release goes with a sound like a breath let out after a long time.'
+  ];
+  addLog(lines[Math.min(c.steps, 4) - 1], 'log-lore');
+  if (c.steps >= 4) {
+    c.opened = true;
+    G.seeds.cabinetOpened = true;
+    G.flags.libraryVisible = true;
+    addLog('Inside: not a manual. A rack. Empty slots, evenly spaced, exactly the right number for something.', 'log-lore');
+    showNotification('◆ The cabinet opens. The Library.', 'notif-lore', 8000);
+    if (typeof Sounds !== 'undefined') Sounds.relicFound();
+  }
+  RENDER.markDirty();
+}
+
+/* Open a chapter of the book in a new tab */
+function openBook(id) {
+  var v = null;
+  for (var i = 0; i < DATA.library.length; i++) if (DATA.library[i].id === id) { v = DATA.library[i]; break; }
+  if (!v || !v.unlock(G)) return;
+  try { window.open(DATA.bookUrl + v.anchor, '_blank', 'noopener'); } catch(e) {}
+}
 
 /* ── SCENES — a room, some lines, nothing to win ── */
 var Scene = {

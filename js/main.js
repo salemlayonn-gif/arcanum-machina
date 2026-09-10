@@ -148,6 +148,7 @@
       case '5': if (G.flags.prestigeVisible) setScreen('prestige'); break;
       case '6': if (G.flags.codexVisible)    setScreen('codex');    break;
       case '7': if (G.flags.relicsVisible)   setScreen('relics');   break;
+      case '8': if (G.flags.libraryVisible)  setScreen('library');  break;
     }
   });
 
