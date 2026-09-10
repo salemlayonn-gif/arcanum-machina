@@ -29,9 +29,11 @@ G.buildings = { memoryTerminal:1 }; G.res.memoryShard = 1; G.loreUnlocked=[]; G.
 Engine.checkLoreUnlocks();
 assert(G.decoding.memory_shard_first && !G.decoding.memory_shard_first.complete, 'shard 0001 enters decoding');
 const segs = loreSegments(getLoreEntry('memory_shard_first')).length;
-let n = Engine.advanceDecoding(75*3+1, true);
-assert(n===3 && G.decoding.memory_shard_first.done===3, 'three segments after 225s (got '+n+', done '+G.decoding.memory_shard_first.done+' of '+segs+')');
-Engine.advanceDecoding(75*segs, true);
+const per = decodeSegmentSeconds();
+let n = Engine.advanceDecoding(per*3+1, true);
+assert(n===3 && G.decoding.memory_shard_first.done===3, 'three segments after 3×'+per+'s (got '+n+', done '+G.decoding.memory_shard_first.done+' of '+segs+')');
+assert(Engine.decodedReport['Recovered Data Fragment — ID: 0001']===3, 'decoded report counts segments per entry');
+Engine.advanceDecoding(per*segs, true);
 assert(isLoreDecoded('memory_shard_first'), 'complete after enough time');
 G.buildings = {}; G.decoding={x:{done:0,progress:0}}; assert(Engine.advanceDecoding(1000,true)===0, 'no terminal -> no progress');
 G.decoding = {};
@@ -155,6 +157,23 @@ let typed = RENDER.typedSegments(e0001, 2, Date.now() - 100); assert(typed.index
 typed = RENDER.typedSegments(e0001, 2, Date.now() - 60000); assert(typed.indexOf('type-cursor') === -1, 'old segment fully shown');
 G.buildings = {}; G.relicFlashAt = Date.now(); assert(strip(RENDER.archivePanel({})).indexOf('◉') !== -1, 'relic flash renders'); G.relicFlashAt = 0;
 G.nextRelicPulse = Date.now() - 1; G.gameLog = []; Engine.checkRelicPulse(Date.now()); assert(G.gameLog[0] && G.gameLog[0].msg.indexOf('relic pulses') !== -1 && G.nextRelicPulse > Date.now() + 50000, 'relic pulse logs and reschedules');
+
+console.log('K. slow records, away panel, hero figure, night');
+G.loreUnlocked=[]; G.loreAt={}; G.playTime=1000; G.explore.zoneRuns={sunken_district:20}; G.explore.visited=['sunken_district']; G.decoding={};
+Engine.checkLoreUnlocks();
+assert(G.loreUnlocked.indexOf('district_mira')!==-1 && G.loreUnlocked.indexOf('district_jorin')===-1, 'Mira unlocks; Jorin waits for time to pass');
+G.playTime += 481; Engine.checkLoreUnlocks(); assert(G.loreUnlocked.indexOf('district_jorin')!==-1 && G.loreUnlocked.indexOf('district_the_sound')===-1, 'Jorin after 8 min; the sound waits');
+G.playTime += 601; Engine.checkLoreUnlocks(); G.playTime += 901; Engine.checkLoreUnlocks();
+assert(G.loreUnlocked.indexOf('district_last')!==-1, 'the last entry after the gaps');
+G.awayReport = { seconds: 7200, mana: 900, scrap: 20, filledIn: 2400, decodedSegments: 2, decodedEntries: {'X': 2}, hasTerminal: true, shardsWaiting: 0, visitors: ['H., the salt merchant'], pulses: 2 };
+let away = strip(RENDER.awayPanel(G.awayReport));
+assert(away.indexOf('gone 2 hours.')!==-1 && away.indexOf('full after 40 minutes')!==-1 && away.indexOf('H., the salt merchant came up')!==-1 && away.indexOf('pulsed twice')!==-1, 'away panel lines: ' + away.split('\n')[1]);
+G.awayReport = null;
+G.hero.equipment = { weapon: 'ironStaff', armor: null, accessory: null };
+let fig = strip(RENDER.heroFigure()); assert(fig.indexOf('|===')!==-1 && fig.indexOf('· · ·')!==-1, 'hero figure shows the staff and an empty slot');
+assert(formatTimeProse(50)==='a minute' && formatTimeProse(11520)==='3 hours 12 minutes' && formatTimeProse(90000)==='1 day 1 hour', 'prose durations');
+G.hero.equipment = { weapon: null, armor: null, accessory: null };
+assert(isNight(23) && isNight(3) && !isNight(12), 'isNight by hour');
 
 console.log('I. content sanity');
 assert(DATA.veritasTransmissions.every(t=>t.text.startsWith('PARTIAL')), 'no Caldris in transmissions');

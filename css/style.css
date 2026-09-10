@@ -1044,6 +1044,18 @@ html[data-theme="parchment"] ::-webkit-scrollbar-thumb { background: var(--dim);
 .pnl-flash { color: var(--bright); text-shadow: 0 0 16px var(--gold), 0 0 4px var(--bright); }
 .chord-bar { white-space: pre; font-size: 0.9rem; letter-spacing: 1px; margin: 4px 0 0 3px; line-height: 1; }
 
+/* ── NIGHT ─────────────────────────────── */
+.archive-panel.panel-night { color: var(--dim); }
+.panel-night .pnl-frame { opacity: 0.5; }
+.panel-night .pnl-room  { opacity: 0.65; }
+.panel-night .pnl-lit   { text-shadow: 0 0 14px var(--mana), 0 0 3px var(--bright); }
+.panel-night .pnl-ley   { opacity: 0.9; }
+
+/* ── WHILE YOU WERE AWAY ───────────────── */
+.away-panel { border: 1px solid var(--arcane-dim); background: rgba(192,132,252,0.04); padding: 12px 16px 14px; }
+.away-line  { color: var(--text); font-size: 0.93rem; line-height: 1.85; }
+.away-line:first-child { color: var(--arcane); }
+
 /* ── TYPING / ROAD ─────────────────────── */
 @keyframes blink { 50% { opacity: 0; } }
 .type-cursor { animation: blink 1s steps(1) infinite; color: var(--memory); }

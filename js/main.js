@@ -127,10 +127,7 @@
       Engine.start();
       RENDER.render();
 
-      setTimeout(function() {
-        var logs = G.gameLog.filter(function(l) { return l.msg.indexOf('You were away') !== -1; });
-        if (logs.length) showNotification(logs[0].msg, 'notif-loot', 6000);
-      }, 500);
+      if (G.awayReport) G.ui.screen = 'archive';
 
     } else {
       showIntro();

@@ -361,6 +361,7 @@ var Ambient = (function() {
     if (place === 'valley' && (G.buildings.scoutPost || 0) >= 1) {
       var bird = function() {
         if (_place !== 'valley' || _paused) return;
+        if (isNight()) { later(bird, 60000); return; }
         var t = ac.currentTime + 0.01;
         var f0 = 2200 + Math.random() * 900;
         Sounds.tone([f0, f0 * 1.25], t, 0.12, { type: 'sine', vol: 0.02, attack: 0.01, release: 0.06, dest: Sounds.ambientBus() });

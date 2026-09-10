@@ -379,10 +379,10 @@ DATA.zones = {
     asciiColor: 'text-memory',
     enemies: ['forest_wolf', 'road_bandit'],
     exploreLoot: [
-      { id: 'scrap', min: 3, max: 9, chance: 0.65 },
-      { id: 'mana',  min: 10, max: 30, chance: 0.8 }
+      { id: 'scrap', min: 5, max: 16, chance: 0.65 },
+      { id: 'mana',  min: 18, max: 54, chance: 0.8 }
     ],
-    exploreTime: 10000,
+    exploreTime: 20000,
     unlockCondition: function(G) { return G.buildings.scoutPost >= 1; },
     phase: 1,
     relicPool: [
@@ -404,11 +404,11 @@ DATA.zones = {
     asciiColor: 'text-dim',
     enemies: ['rusted_guardian', 'scrap_crawler'],
     exploreLoot: [
-      { id: 'scrap',      min: 8, max: 18, chance: 0.75 },
-      { id: 'arcaneCore', min: 1, max: 2, chance: 0.35 },
-      { id: 'memoryShard', min: 1, max: 1, chance: 0.08 }
+      { id: 'scrap',      min: 14, max: 32, chance: 0.75 },
+      { id: 'arcaneCore', min: 1, max: 3, chance: 0.4 },
+      { id: 'memoryShard', min: 1, max: 1, chance: 0.1 }
     ],
-    exploreTime: 9000,
+    exploreTime: 18000,
     unlockCondition: function(G) { return G.stats.enemiesDefeated >= 5; },
     phase: 1,
     relicPool: [
@@ -430,11 +430,11 @@ DATA.zones = {
     asciiColor: 'text-mana',
     enemies: ['care_golem', 'protocol_drone'],
     exploreLoot: [
-      { id: 'scrap',       min: 10, max: 22, chance: 0.7 },
-      { id: 'etherCell',   min: 1, max: 2, chance: 0.3 },
-      { id: 'memoryShard', min: 1, max: 2, chance: 0.2 }
+      { id: 'scrap',       min: 18, max: 40, chance: 0.7 },
+      { id: 'etherCell',   min: 1, max: 3, chance: 0.35 },
+      { id: 'memoryShard', min: 1, max: 2, chance: 0.25 }
     ],
-    exploreTime: 13000,
+    exploreTime: 26000,
     unlockCondition: function(G) { return G.stats.enemiesDefeated >= 20 && (G.buildings.ancientWorkshop || 0) >= 1; },
     phase: 2,
     relicPool: [
@@ -456,11 +456,11 @@ DATA.zones = {
     asciiColor: 'text-arcane',
     enemies: ['mana_wraith', 'architect_sentry'],
     exploreLoot: [
-      { id: 'memoryShard', min: 1, max: 3, chance: 0.6 },
-      { id: 'etherCell',   min: 1, max: 2, chance: 0.4 },
-      { id: 'arcaneCore',  min: 2, max: 5, chance: 0.5 }
+      { id: 'memoryShard', min: 1, max: 4, chance: 0.65 },
+      { id: 'etherCell',   min: 1, max: 3, chance: 0.45 },
+      { id: 'arcaneCore',  min: 3, max: 8, chance: 0.5 }
     ],
-    exploreTime: 16000,
+    exploreTime: 32000,
     unlockCondition: function(G) { return G.stats.enemiesDefeated >= 35 && (G.res.memoryShard || 0) >= 3; },
     phase: 3,
     relicPool: [
@@ -482,10 +482,10 @@ DATA.zones = {
     asciiColor: 'text-gold',
     enemies: ['vault_automaton', 'lattice_fragment'],
     exploreLoot: [
-      { id: 'memoryShard', min: 3, max: 6, chance: 0.8 },
-      { id: 'etherCell',   min: 2, max: 5, chance: 0.6 }
+      { id: 'memoryShard', min: 4, max: 9, chance: 0.8 },
+      { id: 'etherCell',   min: 3, max: 8, chance: 0.6 }
     ],
-    exploreTime: 22000,
+    exploreTime: 45000,
     unlockCondition: function(G) { return (G.buildings.golemForge || 0) >= 1 && G.stats.enemiesDefeated >= 60; },
     phase: 4,
     relicPool: [
@@ -507,11 +507,11 @@ DATA.zones = {
     asciiColor: 'text-gold',
     enemies: ['light_warden', 'spire_chantor'],
     exploreLoot: [
-      { id: 'mana',        min: 50, max: 100, chance: 0.75 },
-      { id: 'memoryShard', min: 1, max: 2, chance: 0.40 },
-      { id: 'arcaneCore',  min: 1, max: 3, chance: 0.25 }
+      { id: 'mana',        min: 90, max: 180, chance: 0.75 },
+      { id: 'memoryShard', min: 1, max: 3, chance: 0.45 },
+      { id: 'arcaneCore',  min: 2, max: 5, chance: 0.3 }
     ],
-    exploreTime: 28000,
+    exploreTime: 55000,
     unlockCondition: function(G) { return G.prestige.count >= 3 && G.stats.enemiesDefeated >= 50; },
     phase: 5,
     relicPool: [
@@ -533,11 +533,11 @@ DATA.zones = {
     asciiColor: 'text-memory',
     enemies: ['core_preserver', 'lattice_architect'],
     exploreLoot: [
-      { id: 'memoryShard', min: 3, max: 6, chance: 0.70 },
-      { id: 'etherCell',   min: 2, max: 5, chance: 0.55 },
-      { id: 'arcaneCore',  min: 4, max: 8, chance: 0.45 }
+      { id: 'memoryShard', min: 5, max: 10, chance: 0.70 },
+      { id: 'etherCell',   min: 3, max: 8, chance: 0.55 },
+      { id: 'arcaneCore',  min: 7, max: 14, chance: 0.45 }
     ],
-    exploreTime: 35000,
+    exploreTime: 70000,
     unlockCondition: function(G) { return G.prestige.count >= 4 && G.stats.enemiesDefeated >= 80; },
     phase: 6,
     relicPool: [
@@ -1660,7 +1660,7 @@ None of us argue with the sound anymore.`
     id: 'district_jorin',
     title: 'Resident Record — "Jorin"',
     chapter: 'Recovered: The District Residents',
-    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 4; },
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 5 && loreAgo('district_mira') >= 480; },
     asciiColor: 'text-dim',
     ascii: `
         ▲ the ridge
@@ -1681,7 +1681,7 @@ We have stopped asking.`
     id: 'district_the_sound',
     title: 'On Care Without Consent',
     chapter: 'Chapter II: Aethoria',
-    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 6; },
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 9 && loreAgo('district_jorin') >= 600; },
     asciiColor: 'text-tech',
     ascii: `
     {=========}
@@ -1703,7 +1703,7 @@ The records end around three hundred years after the Silence. The golems are sti
     id: 'district_last',
     title: 'Resident Record — The Last Entry',
     chapter: 'Recovered: The District Residents',
-    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 9; },
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 14 && loreAgo('district_the_sound') >= 900; },
     asciiColor: 'text-dim',
     ascii: `
    ┌──────────┐
@@ -1726,7 +1726,7 @@ I am going to put the pen down now. It is the rest hour.`
     id: 'unit7_log',
     title: 'Patrol Record — Eastern Road Division',
     chapter: 'Chapter II: Aethoria',
-    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).ruined_outpost || 0) >= 4; },
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).ruined_outpost || 0) >= 8 && (G.relics || []).indexOf('roadWardensTag') !== -1; },
     asciiColor: 'text-dim',
     ascii: `
   ╔════════════════════════╗
@@ -1752,7 +1752,7 @@ I hope they reached it.`
     id: 'merchant_note',
     title: 'A Note Under a Stone',
     chapter: 'Correspondence',
-    unlockCondition: function(G) { return (G.buildings.scoutPost || 0) >= 1 && G.stats.exploreRuns >= 5; },
+    unlockCondition: function(G) { return (G.buildings.scoutPost || 0) >= 1 && G.stats.exploreRuns >= 12 && G.playTime >= 1500; },
     asciiColor: 'text-dim',
     ascii: `
        ______

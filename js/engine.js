@@ -49,6 +49,18 @@ var Engine = {
     Engine.checkVeritasTransmission();
     Engine.checkRepeater(now);
     Engine.checkRelicPulse(now);
+    Engine.checkDaylight();
+  },
+
+  /* Nightfall and first light, on the real clock */
+  _lastHour: null,
+  checkDaylight: function() {
+    var h = new Date().getHours();
+    if (Engine._lastHour === null) { Engine._lastHour = h; return; }
+    if (h === Engine._lastHour) return;
+    Engine._lastHour = h;
+    if (h === 21) { addLog('Night comes down over the valley. The walls hold their light.', 'log-lore'); RENDER.markDirty(); }
+    if (h === 6)  { addLog('First light over the eastern ridge. The conduit glow fades into it.', 'log-lore'); RENDER.markDirty(); }
   },
 
   /* The relic pulses. Once. Never on a schedule you could learn. */
@@ -230,6 +242,8 @@ var Engine = {
       if (G.loreUnlocked.indexOf(entry.id) !== -1) return;
       if (entry.unlockCondition(G)) {
         G.loreUnlocked.push(entry.id);
+        if (!G.loreAt) G.loreAt = {};
+        G.loreAt[entry.id] = G.playTime;
         if (!G.flags.loreVisible) G.flags.loreVisible = true;
         if (entry.decode) {
           /* A Shard: recovered, not yet read. The Terminal has to decode it, layer by layer. */
@@ -249,7 +263,9 @@ var Engine = {
   },
 
   /* Advance every shard currently on the Terminal by `seconds`. Returns segments completed. */
+  decodedReport: {},
   advanceDecoding: function(seconds, quiet) {
+    Engine.decodedReport = {};
     if (getBuildingCount('memoryTerminal') < 1) return 0;
     var completedSegments = 0;
     var per = decodeSegmentSeconds();
@@ -264,6 +280,7 @@ var Engine = {
         d.progress -= 1;
         d.done++;
         completedSegments++;
+        Engine.decodedReport[entry.title] = (Engine.decodedReport[entry.title] || 0) + 1;
         if (!quiet) d.lastDoneAt = Date.now();
         if (!quiet) {
           if (typeof Sounds !== 'undefined') Sounds.decodeTick();

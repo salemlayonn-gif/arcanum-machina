@@ -1,5 +1,29 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-11 — v1.4.0: the playthrough bot, and three quiet wins
+
+- **`test/playthrough.js`** — a greedy player drives the real game at accelerated time and prints a milestone
+  timeline (`node test/playthrough.js [hours] [seed]`). First run: the whole game in **6 h 21 m of continuous
+  play**, cycles 1h40 → 1h12 → 59m → 1h21 → 39m → 27m (the spiral accelerates as the book does), but all four
+  District testimonies inside two minutes, the first shard decoded ten minutes after the Terminal, and a run
+  every ten seconds.
+- **Tuning from it:** decode base 75 → 150 s per segment; every zone's explore time doubled with loot raised
+  ~×1.8 (same economy, half the clicks); the District testimonies now also wait 8 / 10 / 15 minutes of play
+  after the previous one (`G.loreAt`, `loreAgo()`); Unit 7's log needs the tag and eight Outpost walks; the
+  merchant's note needs twelve runs and 25 minutes. Per-zone run counts are now **lifetime** — you walk the
+  same roads every cycle. Tuned run: 6 h 35 m, 25% fewer actions, Jorin eight minutes after Mira.
+- **Equipment on the figure** — weapon, armour and accessory art drawn beside the hero in the Hero tab and in
+  combat (`RENDER.heroFigure`). The art was in the data all along.
+- **While you were away** — the offline return is a notebook page in Salem's voice (`G.awayReport`,
+  `RENDER.awayPanel`): how long, what the lines produced and when the capacitors filled, what the Terminal
+  decoded (per entry), who came up the road and left, how many times the relic pulsed with nobody watching.
+  `formatTimeProse()` for durations in prose.
+- **Night in the valley** — on the real clock (`isNight()`): the panel dims and the channel-light glows
+  harder, visitors stay home, the birds stop, a night line in the status text, and log lines at nightfall
+  and first light (`Engine.checkDaylight`).
+
+---
+
 ## Session 2026-09-10 (night) — v1.3.0: animation, music, sound
 
 All 19 items from the second-round list (IMPROVEMENTS.md §4). Architecture first:

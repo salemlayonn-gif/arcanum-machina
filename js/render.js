@@ -141,6 +141,9 @@ var RENDER = {
   screenArchive: function() {
     var html = '';
 
+    // The notebook page for the time you were away
+    if (G.awayReport) html += RENDER.awayPanel(G.awayReport);
+
     // The Archive itself, and a line of the field notes
     html += '<div class="section">';
     html += RENDER.archivePanel({});
@@ -208,10 +211,58 @@ var RENDER = {
     return html;
   },
 
-  /* Visitors come in six-minute windows: two windows present, one window the road is quiet. */
+  /* While you were away — a page of the notebook, in Salem's voice */
+  awayPanel: function(r) {
+    var lines = [];
+    lines.push('You were gone ' + formatTimeProse(r.seconds) + '.');
+    var flow = 'The lines kept flowing: +' + fmt(r.mana) + ' mana, +' + fmt(r.scrap) + ' scrap.';
+    if (r.filledIn > 0 && r.filledIn < r.seconds) flow += ' The capacitors were full after ' + formatTimeProse(r.filledIn) + '. The rest went back into the ground.';
+    lines.push(flow);
+    if (r.decodedSegments > 0) {
+      var parts = Object.keys(r.decodedEntries).map(function(t) { return '"' + t + '"' + (r.decodedEntries[t] > 1 ? ' ×' + r.decodedEntries[t] : ''); });
+      lines.push('The Terminal decoded ' + r.decodedSegments + ' segment' + (r.decodedSegments === 1 ? '' : 's') + ': ' + parts.join(', ') + '.');
+    } else if (r.shardsWaiting > 0 && !r.hasTerminal) {
+      lines.push('The shards waited on the shelf. There is still no Terminal to read them.');
+    } else if (r.hasTerminal) {
+      lines.push('The Terminal was quiet. Nothing on it to read.');
+    }
+    if (r.visitors.length) {
+      r.visitors.forEach(function(v) { lines.push(v.charAt(0).toUpperCase() + v.slice(1) + ' came up the road, waited a while, and left.'); });
+    } else if ((G.buildings.scoutPost || 0) >= 1) {
+      lines.push('Nobody came up the road.');
+    }
+    if (r.pulses > 0) lines.push('The relic pulsed ' + (r.pulses === 1 ? 'once' : r.pulses === 2 ? 'twice' : r.pulses + ' times') + '. Nobody saw it.');
+    var html = '<div class="section away-panel">';
+    html += '<div class="section-header">── WHILE YOU WERE AWAY ─────────────────────────</div>';
+    lines.forEach(function(l) { html += '<div class="away-line">' + escapeHtml(l) + '</div>'; });
+    html += '<div style="margin-top:10px;"><button class="btn btn-small" onclick="G.awayReport=null;RENDER.markDirty();">[ CLOSE THE NOTEBOOK ]</button></div>';
+    html += '</div>';
+    return html;
+  },
+
+  /* The hero figure with whatever is equipped drawn beside it */
+  heroFigure: function() {
+    var body = ['   O   ', '  /|\\  ', '  / \\  ', ' [===] '];
+    var eq = G.hero.equipment;
+    var slots = ['accessory', 'weapon', 'armor'];
+    var out = '';
+    for (var i = 0; i < 4; i++) {
+      var line = '<span class="hero-art">' + body[i] + '</span>';
+      if (i < 3) {
+        var id = eq[slots[i]];
+        line += '  ' + (id && DATA.equipment[id]
+          ? '<span class="text-tech">' + escapeHtml(DATA.equipment[id].ascii.trim()) + '</span>'
+          : '<span class="text-dim" style="opacity:.5">· · ·</span>');
+      }
+      out += line + (i < 3 ? '\n' : '');
+    }
+    return '<pre class="ascii-art">' + out + '</pre>';
+  },
+
+  /* Visitors come in six-minute windows: two windows present, one window the road is quiet. Never at night. */
   currentVisitor: function() {
     if ((G.buildings.scoutPost || 0) < 1 || G.stats.exploreRuns < 3) return null;
-    if (G.flags.ended) return null;
+    if (G.flags.ended || isNight()) return null;
     var win = Math.floor(G.playTime / 360);
     if (win % 3 === 2) return null;
     var list = DATA.travellers;
@@ -220,6 +271,9 @@ var RENDER = {
 
   getStatusFlavor: function() {
     if (G.flags.ended) return 'The valley is full of students. The Terminal still displays messages, sometimes. They are always worth reading.';
+    if (isNight() && G.prestige.count < 4 && (G.buildings.manaConduit || 0) >= 1 && !(G.buildings.resonanceBeacon || 0) && Math.floor(G.playTime / 120) % 2 === 0) {
+      return 'Night. The channel light in the walls is the only light in the valley. It has begun to feel, for an hour at a time, like company.';
+    }
     if (G.prestige.count >= 5) return 'Every pulse gives it more of itself back. You are not only rebuilding the Archive. You are rebuilding the mind that designed it.';
     if (G.prestige.count >= 4) return 'You were never alone in this. Not for a single day.';
     if (G.prestige.count >= 3) return 'Every mage in Aethoria has been using a tool they do not understand. So were you.';
@@ -507,7 +561,7 @@ var RENDER = {
     var heroHpPct = Combat.hpPct(G.combat.heroHp, getHeroMaxHp());
     var heroHpCls = Combat.getHpClass(G.combat.heroHp, getHeroMaxHp());
     html += '<div class="combatant">' +
-      '<pre class="ascii-art hero-art">' + DATA.ASCII.hero + '</pre>' +
+      RENDER.heroFigure() +
       '<div class="combatant-name">' + G.heroName + '</div>' +
       '<div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill ' + heroHpCls + '" style="width:' + heroHpPct + '%"></div></div>' +
       '<span>' + Math.ceil(G.combat.heroHp) + '/' + getHeroMaxHp() + '</span></div>' +
@@ -673,7 +727,7 @@ var RENDER = {
 
     // ASCII + level
     html += '<div class="hero-ascii-panel">';
-    html += '<pre class="ascii-art hero-art">' + DATA.ASCII.hero + '</pre>';
+    html += RENDER.heroFigure();
     var expPct = ((G.hero.exp / G.hero.expToNext) * 100).toFixed(1);
     html += '<div style="font-size:0.86rem;margin-top:8px;color:var(--dim);">EXP</div>';
     html += '<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill mana-fill" style="width:' + expPct + '%"></div></div>' +
@@ -1130,7 +1184,8 @@ var RENDER = {
         .replace(/†/g, sp('pnl-tech', '†'))
         .replace(/✓/g, sp(cRoom, '✓'));
     }
-    return '<pre class="archive-panel' + (mode === 'ruin' ? ' panel-ruin' : '') + '">' + lines.map(colour).join('\n') + '</pre>';
+    var night = mode === 'normal' && isNight();
+    return '<pre class="archive-panel' + (mode === 'ruin' ? ' panel-ruin' : '') + (night ? ' panel-night' : '') + '">' + lines.map(colour).join('\n') + '</pre>';
   },
 
   /* ── WORLD MAP (fog of war) ──────────── */
@@ -1265,8 +1320,7 @@ var RENDER = {
     var len = 26, pos = Math.min(len - 1, Math.floor((pct / 100) * len));
     var s = '';
     for (var i = 0; i < len; i++) s += (i === pos) ? 'o' : ((i % 2) ? '─' : '·');
-    var hour = new Date().getHours();
-    var night = hour < 6 || hour >= 21;
+    var night = isNight();
     return '<span class="road-line' + (night ? ' road-night' : '') + '">' + (night ? '☾ ' : '  ') + s + '</span>';
   },
 

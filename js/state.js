@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.3.0',
+  version: '1.4.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -119,6 +119,9 @@ var G = {
   /* Shard decoding: loreId -> { done, progress, complete } */
   decoding: {},
 
+  /* playTime at which each record was unlocked — lets later records wait a while after earlier ones */
+  loreAt: {},
+
   /* One-shot narrative events already seen (kept through Awakenings) */
   seeds: {},
 
@@ -171,7 +174,10 @@ var G = {
 
   /* Transient animation timestamps (not saved) */
   relicFlashAt: 0,
-  nextRelicPulse: 0
+  nextRelicPulse: 0,
+
+  /* What happened while the tab was closed (shown once, not saved) */
+  awayReport: null
 };
 
 /* ── STATE HELPERS ─────────────────────── */
@@ -353,9 +359,20 @@ function loreSegments(entry) {
 
 function decodeSegmentSeconds() {
   var terminals = getBuildingCount('memoryTerminal');
-  var t = 75 / (1 + 0.35 * Math.max(0, terminals - 1));
+  var t = 150 / (1 + 0.35 * Math.max(0, terminals - 1));
   if (G.prestige.count >= 4) t /= 2;
   return t;
+}
+
+/* Seconds of play since a record was unlocked; -1 if it has not been */
+function loreAgo(id) {
+  if (!G.loreAt || G.loreAt[id] === undefined) return -1;
+  return G.playTime - G.loreAt[id];
+}
+
+function isNight(hour) {
+  var h = (hour === undefined) ? new Date().getHours() : hour;
+  return h < 6 || h >= 21;
 }
 
 function isLoreDecoded(id) {
@@ -480,6 +497,7 @@ function saveGame() {
       exploreVisited: G.explore.visited || [],
       zoneRuns: G.explore.zoneRuns || {},
       decoding: G.decoding,
+      loreAt: G.loreAt,
       seeds: G.seeds,
       veritasHint: G.veritasHint,
       veritasTransmission: G.veritasTransmission,
@@ -519,21 +537,39 @@ function loadGame() {
     G.explore.visited  = data.exploreVisited || [];
     G.explore.zoneRuns = data.zoneRuns || {};
     G.decoding = data.decoding || {};
+    G.loreAt   = data.loreAt || {};
     G.seeds    = data.seeds || {};
     if (G.loreUnlocked.length && !G.flags.loreVisible) G.flags.loreVisible = true;
 
-    /* Offline progress */
+    /* Offline progress — and the notebook page for it */
     if (data.savedAt) {
-      var elapsed = Math.min((Date.now() - data.savedAt) / 1000, 28800); // cap 8h
+      var rawElapsed = (Date.now() - data.savedAt) / 1000;
+      var elapsed = Math.min(rawElapsed, 28800); // cap 8h of production
       if (elapsed > 30) {
-        var manaGain  = getManaPerSec() * elapsed * 0.5;
+        var manaBefore = G.res.mana, manaRate = getManaPerSec();
+        var manaGain  = manaRate * elapsed * 0.5;
         var scrapGain = getScrapPerSec() * elapsed * 0.5;
         resAdd('mana', manaGain);
         resAdd('scrap', scrapGain);
+        var manaGot = G.res.mana - manaBefore;
+        var filledIn = (G.res.mana >= G.resCap.mana && manaRate > 0) ? ((G.resCap.mana - manaBefore) / (manaRate * 0.5)) : 0;
         var decoded = (typeof Engine !== 'undefined') ? Engine.advanceDecoding(elapsed, true) : 0;
-        var msg = 'You were away ' + formatTime(elapsed) + '. The lines kept flowing: +' + fmt(manaGain) + ' mana, +' + fmt(scrapGain) + ' scrap.';
-        if (decoded > 0) msg += ' The Terminal decoded ' + decoded + ' segment' + (decoded === 1 ? '' : 's') + ' while you were gone.';
-        addLog(msg, 'log-important');
+        var report = {
+          seconds: rawElapsed, mana: manaGot, scrap: G.res.scrap - (G.res.scrap - scrapGain > 0 ? G.res.scrap - scrapGain : 0),
+          filledIn: filledIn, decodedSegments: decoded,
+          decodedEntries: (typeof Engine !== 'undefined' && Engine.decodedReport) ? Engine.decodedReport : {},
+          hasTerminal: getBuildingCount('memoryTerminal') >= 1,
+          shardsWaiting: Object.keys(G.decoding).filter(function(id) { return !G.decoding[id].complete; }).length,
+          visitors: [], pulses: 0
+        };
+        if ((G.buildings.scoutPost || 0) >= 1 && G.stats.exploreRuns >= 3 && !G.flags.ended) {
+          var n = Math.min(3, Math.floor(rawElapsed / 1500));
+          var base = Math.floor(data.savedAt / 360000);
+          for (var i = 0; i < n; i++) report.visitors.push(DATA.travellers[(base + i * 2) % DATA.travellers.length].who);
+        }
+        if (!(G.buildings.resonanceBeacon || 0)) report.pulses = Math.min(4, Math.floor(rawElapsed / 110));
+        G.awayReport = report;
+        addLog('You were away ' + formatTimeProse(rawElapsed) + '. The notebook has a page for it.', 'log-important');
       }
     }
 
@@ -569,10 +605,11 @@ function resetForPrestige(keepDeep) {
   };
   G.inventory = [];
   G.crafting  = { slot0: null, slot1: null };
+  /* The roads are re-found each cycle (the map fogs again), but how often you have walked them is lifetime */
   G.explore   = {
     active: false, zoneId: null, startTime: 0, endTime: 0, runsCompleted: 0,
     visited:  keepDeep ? (G.explore.visited || []) : [],
-    zoneRuns: keepDeep ? (G.explore.zoneRuns || {}) : {}
+    zoneRuns: G.explore.zoneRuns || {}
   };
   G.combat    = { active: false, zoneId: null, enemyId: null, heroHp: 0, enemyHp: 0, enemyMaxHp: 0, log: [], result: null, lastTurnTime: 0, turnCount: 0, golemHp: 0, golemMaxHp: 30, cooldownUntil: 0, modifier: null, script: null };
   G.flags     = {
@@ -613,6 +650,18 @@ function formatTime(secs) {
   if (secs < 60) return secs + 's';
   if (secs < 3600) return Math.floor(secs/60) + 'm ' + (secs%60) + 's';
   return Math.floor(secs/3600) + 'h ' + Math.floor((secs%3600)/60) + 'm';
+}
+
+/* Durations in prose: "a minute", "41 minutes", "3 hours 12 minutes", "2 days" */
+function formatTimeProse(secs) {
+  secs = Math.floor(secs);
+  if (secs < 90) return 'a minute';
+  var m = Math.round(secs / 60);
+  if (m < 60) return m + ' minutes';
+  var h = Math.floor(m / 60), rm = m % 60;
+  if (h < 24) return h + (h === 1 ? ' hour' : ' hours') + (rm ? ' ' + rm + ' minutes' : '');
+  var d = Math.floor(h / 24), rh = h % 24;
+  return d + (d === 1 ? ' day' : ' days') + (rh ? ' ' + rh + (rh === 1 ? ' hour' : ' hours') : '');
 }
 
 function loreText(text) {
