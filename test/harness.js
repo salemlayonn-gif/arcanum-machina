@@ -238,6 +238,37 @@ assert(strip(RENDER.archivePanel({})).indexOf('shelf')!==-1, 'shelf appears in t
 assert(DATA.bookUrl.indexOf('github.io/arcanum-machina-book/')!==-1 && DATA.library.length===31, 'book url and 31 volumes');
 let anchors = DATA.library.filter(v=>v.anchor).map(v=>v.anchor);
 assert(anchors.length===30 && anchors.every(a=>/^#[a-z0-9-]+$/.test(a)) && new Set(anchors).size===30, 'every volume has a unique valid anchor');
+assert(DATA.library.every(v=>String(v.num).length<=3), 'every spine numeral fits its slot: ' + DATA.library.filter(v=>String(v.num).length>3).map(v=>v.num).join(','));
+assert(new Set(DATA.library.map(v=>v.num)).size===DATA.library.length, 'spine numerals are unique');
+G.flags.ended=true; G.prestige.count=6; G.relics=Object.keys(DATA.relics); G.stats.enemiesDefeated=200;
+DATA.zoneOrder.forEach(z=>{ G.explore.zoneRuns[z]=5; });
+Object.keys(G.decoding).forEach(k=>{ G.decoding[k].complete=true; });
+G.loreUnlocked = DATA.lore.map(l=>l.id);
+G.annotations  = DATA.annotations.map(a=>a.id);
+DATA.lore.filter(l=>l.decode).forEach(l=>{ G.decoding[l.id]={done:99,progress:0,complete:true}; });
+let fullRows = strip(RENDER.screenLibrary().split('<pre')[1].split('</pre>')[0].replace(/^[^>]*>/, '')).split('\n').filter(l=>/^[╔║╠╚]/.test(l));
+assert([...new Set(fullRows.map(l=>l.length))].length===1, 'shelf stays square with every volume unlocked: ' + [...new Set(fullRows.map(l=>l.length))].join(','));
+assert(libraryUnlocked().length===DATA.library.length, 'every volume unlockable: ' + libraryUnlocked().length + '/' + DATA.library.length);
+G.flags.ended=false;
+
+console.log('N. narrow (phone) layouts');
+assert(RENDER.narrow() === false, 'wide by default when there is no window width');
+global.window.innerWidth = 400;
+assert(RENDER.narrow() === true, 'narrow under 620px');
+G.buildings = { manaConduit: 5, runicWorkbench: 1, scoutPost: 1, scrapDepot: 2, memoryTerminal: 1, leyTap: 2 };
+G.awakening = null; G.flags.libraryVisible = true;
+let np = strip(RENDER.archivePanel({})).split('\n');
+let nFrame = np.filter(l => /^[╔║╠╚]/.test(l));
+assert([...new Set(nFrame.map(l => l.length))].length === 1 && nFrame[0].length === 32, 'narrow panel is 32 wide and square: ' + [...new Set(nFrame.map(l => l.length))].join(','));
+assert(np.every(l => l.length <= 34), 'no narrow panel line exceeds 34 columns: max ' + Math.max(...np.map(l => l.length)));
+assert(np.join('\n').indexOf('relic') !== -1 && np.join('\n').indexOf('BENCH') !== -1, 'narrow panel still shows the relic and the bench');
+G.explore.visited = ['overgrown_road', 'sunken_district'];
+let nm = strip(RENDER.worldMapNarrow()).split('\n');
+assert(nm.every(l => l.length <= 30) && nm.join('\n').indexOf('OVERGROWN ROAD') !== -1 && nm.join('\n').indexOf('THE ARCHIVE') !== -1, 'narrow map is a chain within 30 columns');
+let nsRows = strip(RENDER.screenLibrary().split('<pre')[1].split('</pre>')[0].replace(/^[^>]*>/, '')).split('\n').filter(l => /^[╔║╠╚]/.test(l));
+assert([...new Set(nsRows.map(l => l.length))].length === 1 && nsRows[0].length === 32, 'narrow shelf rows are square: ' + [...new Set(nsRows.map(l => l.length))].join(','));
+delete global.window.innerWidth;
+assert(RENDER.narrow() === false, 'back to wide');
 
 console.log('I. content sanity');
 assert(DATA.veritasTransmissions.every(t=>t.text.startsWith('PARTIAL')), 'no Caldris in transmissions');

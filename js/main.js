@@ -117,7 +117,22 @@
     var unlock = function() { Sounds.unlock(); };
     document.addEventListener('click', unlock, { passive: true });
     document.addEventListener('keydown', unlock, { passive: true });
+    document.addEventListener('touchstart', unlock, { passive: true });
     document.addEventListener('visibilitychange', function() { Ambient.pause(document.hidden); });
+
+    /* The ASCII panels have a wide and a narrow layout; a rotation switches between them */
+    var resizeTimer = null, wasNarrow = RENDER.narrow();
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        var isNarrow = RENDER.narrow();
+        if (isNarrow !== wasNarrow) { wasNarrow = isNarrow; }
+        RENDER.markDirty();
+        RENDER.render();
+      }, 150);
+    });
+
+    Saves.restoreHandle();
     var saved = loadGame();
 
     if (saved && G.flags.introComplete) {

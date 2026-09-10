@@ -19,8 +19,19 @@ són al `.gitignore` a propòsit (documents de treball, «not for publication»)
 (`DATA.library`) enllaça cada capítol amb l'àncora del lector: si es reordena el llibre, cal revisar les
 àncores — el harness comprova que totes són úniques i vàlides, però no que existeixin al lector.
 
-**Regles:** actualitzar `G.version` (a `state.js`) i afegir una entrada al `DEVLOG.md` a cada sessió amb
-canvis. Sense toasts d'idle-game (cap «Unlocked!»); les cadenes noves en la veu del llibre.
+**Regles:** actualitzar `G.version` (a `state.js`) **i el `VERSION` de `sw.js`** a cada versió — si no es
+puja el del service worker, els jugadors es queden amb la memòria cau antiga. Afegir una entrada al
+`DEVLOG.md` a cada sessió amb canvis. Sense toasts d'idle-game (cap «Unlocked!»); les cadenes noves en la
+veu del llibre.
+
+**El joc és una PWA** publicada a <https://salemlayonn-gif.github.io/arcanum-machina/> (Pages des de `main`,
+arrel). Si s'afegeix un fitxer JS nou, cal posar-lo a `index.html` **i** a la llista `ASSETS` de `sw.js`.
+Les icones es generen amb `node tools/make-icons.js` (no hi ha dependències; també fa l'`icon.ico`).
+Instal·lació i desats a fitxer: `INSTALL.md`.
+
+**Amplada de pantalla:** `RENDER.narrow()` (<620px) tria una disposició ASCII estreta de debò (panell 30
+columnes, mapa en cadena, prestatge de 4 lloms per fila). Si es toca qualsevol dibuix ASCII, cal comprovar
+les dues amplades — el harness ho fa.
 
 **Test de regressió:** `node test/harness.js` carrega els mòduls reals a Node amb un DOM fals i prova
 caps, descodificació de shards, la seqüència de l'Awakening, el final, encontres guionats, els renders

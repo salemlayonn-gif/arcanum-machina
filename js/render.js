@@ -1030,34 +1030,41 @@ var RENDER = {
 
     function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
     function padC(s, w) { var l = Math.floor((w - s.length) / 2); return rep(' ', l) + s + rep(' ', w - s.length - l); }
+    /* every spine is exactly five columns wide, whatever is printed on it */
+    function num3(s) { s = String(s); return s.length > 3 ? s.slice(0, 3) : padC(s, 3); }
     function spine(v) {
       var isOpen = open.indexOf(v.id) !== -1;
-      if (isOpen) return '<a class="spine-link" href="#" title="' + escapeHtml(v.title) + '" onclick="openBook(\'' + v.id + '\');return false;">│' + padC(v.num, 3) + '│</a>';
+      if (isOpen) return '<a class="spine-link" href="#" title="' + escapeHtml(v.title) + '" onclick="openBook(\'' + v.id + '\');return false;">│' + num3(v.num) + '│</a>';
       if (v.sealed) return '<span class="spine-sealed" title="It will not resolve, however you turn the light.">' + (reducedMotion() ? '░░░░░' : ['░░░░░', '░▒░░░', '░░░▒░'][frame % 3]) + '</span>';
       return '<span class="spine-empty">▒▒▒▒▒</span>';
     }
     var parts = [
-      { n: 1, label: 'PART ONE — THE SCHOLAR ALONE' },
-      { n: 2, label: 'PART TWO — THE WORLD OUTSIDE' },
-      { n: 3, label: 'PART THREE — THE RECOVERED ARCHIVES' },
-      { n: 4, label: 'PART FOUR — THE AWAKENINGS' },
-      { n: 5, label: 'PART FIVE — AND AFTER' },
-      { n: 6, label: 'APPENDICES' },
-      { n: 0, label: 'THE TWO THAT WERE ALREADY THERE' }
+      { n: 1, label: 'PART ONE — THE SCHOLAR ALONE',        short: 'I · THE SCHOLAR ALONE' },
+      { n: 2, label: 'PART TWO — THE WORLD OUTSIDE',        short: 'II · THE WORLD OUTSIDE' },
+      { n: 3, label: 'PART THREE — THE RECOVERED ARCHIVES', short: 'III · RECOVERED ARCHIVES' },
+      { n: 4, label: 'PART FOUR — THE AWAKENINGS',          short: 'IV · THE AWAKENINGS' },
+      { n: 5, label: 'PART FIVE — AND AFTER',               short: 'V · AND AFTER' },
+      { n: 6, label: 'APPENDICES',                          short: 'APPENDICES' },
+      { n: 0, label: 'THE TWO THAT WERE ALREADY THERE',     short: 'ALREADY THERE' }
     ];
-    var W = 46;
+    var narrow = RENDER.narrow();
+    var W = narrow ? 30 : 46, perRow = narrow ? 4 : 7;
     var out = [];
     out.push('╔' + rep('═', W) + '╗');
     parts.forEach(function(p, pi) {
       var vols = DATA.library.filter(function(v) { return v.part === p.n; });
-      var rowHtml = ' ', rowLen = 1;
-      vols.forEach(function(v) { rowHtml += spine(v) + ' '; rowLen += 6; });
-      out.push('║' + rowHtml + rep(' ', W - rowLen) + '║');
-      var label = ' <span class="pnl-dim">' + p.label + '</span>';
-      out.push('║' + label + rep(' ', W - 1 - p.label.length) + '║');
+      for (var i = 0; i < vols.length; i += perRow) {
+        var slice = vols.slice(i, i + perRow);
+        var rowHtml = ' ', rowLen = 1;
+        slice.forEach(function(v) { rowHtml += spine(v) + ' '; rowLen += 6; });
+        out.push('║' + rowHtml + rep(' ', W - rowLen) + '║');
+      }
+      var text = narrow ? p.short : p.label;
+      if (text.length > W - 1) text = text.slice(0, W - 1);
+      out.push('║ <span class="pnl-dim">' + text + '</span>' + rep(' ', Math.max(0, W - 1 - text.length)) + '║');
       out.push((pi < parts.length - 1 ? '╠' : '╚') + rep('═', W) + (pi < parts.length - 1 ? '╣' : '╝'));
     });
-    out.push('  ' + rep('· ', 22) + ' <span class="pnl-dim">dust</span>');
+    out.push('  ' + rep('· ', Math.floor(W / 2) - 1) + ' <span class="pnl-dim">dust</span>');
 
     var html = '<div class="section">';
     html += '<div class="section-header">── THE LIBRARY WING ────────────────────────────</div>';
@@ -1173,10 +1180,29 @@ var RENDER = {
     html += '</div>';
     html += '</div>';
 
+    // ── Savegame files ──
     html += '<div class="config-section">';
-    html += '<div class="section-header">── SAVE DATA ───────────────────────────────────</div>';
+    html += '<div class="section-header">── SAVEGAME FILES ──────────────────────────────</div>';
+    var linked = Saves.handleName();
+    html += '<div class="text-dim" style="font-size:0.85em;margin-bottom:10px;">' +
+      'The Archive keeps its own copy in this browser. This writes a real file wherever you keep your savegames' +
+      (Saves.supported() ? ' — and remembers the file, so saving again is one click.' : '. (Your browser will put it in your downloads folder.)') +
+      '</div>';
+    if (linked) {
+      html += '<div style="font-size:0.86rem;margin-bottom:8px;"><span class="text-dim">Linked file:</span> <span class="text-tech">' + escapeHtml(linked) + '</span> ' +
+        '<button class="btn btn-small" onclick="Saves.forget()">[UNLINK]</button></div>';
+    }
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    html += '<button class="btn btn-tech" onclick="Saves.write(false)">[' + (linked ? 'SAVE TO ' + escapeHtml(linked.toUpperCase()) : 'SAVE TO FILE') + ']</button>';
+    if (linked) html += '<button class="btn" onclick="Saves.write(true)">[SAVE AS…]</button>';
+    html += '<button class="btn btn-arcane" onclick="Saves.read()">[LOAD FROM FILE]</button>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div class="config-section">';
+    html += '<div class="section-header">── SAVE CODE ───────────────────────────────────</div>';
     html += '<div class="save-io">';
-    html += '<div class="text-dim" style="font-size:0.85em;margin-bottom:10px;">Export your save to transfer it to another device. Import a save code to restore progress.</div>';
+    html += '<div class="text-dim" style="font-size:0.85em;margin-bottom:10px;">A save code is the same thing as text — useful for moving a run between devices by pasting it.</div>';
     html += '<div class="save-row">';
     html += '<button class="btn btn-tech" onclick="exportSave()">[EXPORT SAVE]</button>';
     html += '<textarea id="save-export-box" class="save-box" readonly placeholder="Click Export — your save code will appear here and be copied to clipboard."></textarea>';
@@ -1233,6 +1259,11 @@ var RENDER = {
     }).join(' + ');
   },
 
+  /* A phone is not 46 columns wide */
+  narrow: function() {
+    try { return window.innerWidth > 0 && window.innerWidth < 620; } catch(e) { return false; }
+  },
+
   /* ── THE ARCHIVE PANEL ───────────────── */
   /* A cutaway of the Archive that grows with every building and dissolves on Awakening. */
   archivePanel: function(opts) {
@@ -1240,13 +1271,15 @@ var RENDER = {
     var a    = G.awakening;
     var mode = opts.mode || (a ? a.mode : 'normal');
     var b    = G.buildings;
+    var narrow = RENDER.narrow();
+    var SOCK = narrow ? 8 : 12, LEY = narrow ? 10 : 20;
     var n    = b.manaConduit || 0;
-    var lit  = Math.min(n, 12);
-    if (mode === 'blaze' || mode === 'cool') lit = 12;
-    if (mode === 'dimming' && a && a.lit !== null) lit = Math.min(a.lit, 12);
+    var lit  = Math.min(n, SOCK);
+    if (mode === 'blaze' || mode === 'cool') lit = SOCK;
+    if (mode === 'dimming' && a && a.lit !== null) lit = Math.min(a.lit, SOCK);
     if (mode === 'dark' || mode === 'ruin') lit = 0;
     var rooms = !(mode === 'dark' || mode === 'ruin');
-    var W = 46;
+    var W = narrow ? 30 : 46;
 
     /* {braces} mark dim text and vanish on render — pad by visible width */
     function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
@@ -1256,8 +1289,8 @@ var RENDER = {
     function row(inner) { return '║' + padR(inner, W) + '║'; }
 
     var sock = '';
-    for (var i = 0; i < 12; i++) sock += (i < lit ? '~' : '·') + ' ';
-    var label = mode === 'ruin' ? 'sockets, dark' : (n > 12 ? 'conduits ×' + n : (n > 0 ? 'conduits' : 'conduit sockets'));
+    for (var i = 0; i < SOCK; i++) sock += (i < lit ? '~' : '·') + ' ';
+    var label = mode === 'ruin' ? 'sockets, dark' : (n > SOCK ? 'conduits ×' + n : (n > 0 ? 'conduits' : 'conduit sockets'));
     var lines = [];
     lines.push(' ' + sock + ' {' + label + '}');
     lines.push('╔' + rep('═', W) + '╗');
@@ -1272,8 +1305,15 @@ var RENDER = {
     var beacon = b.resonanceBeacon && rooms;
     var flash = !beacon && (Date.now() - (G.relicFlashAt || 0)) < 450;
     var mid = [beacon ? '[ ★ ]' : (flash ? '[ ◉ ]' : '[ ⊙ ]'), beacon ? 'beacon' : 'relic', '     '];
-    for (var r = 0; r < 3; r++) {
-      lines.push(row('  ' + bench[r] + rep(' ', 8) + padC(mid[r], 5) + rep(' ', 9) + scout[r] + '  '));
+    if (narrow) {
+      /* the relic sits above the rooms instead of between them */
+      lines.push(row(padC(mid[0], W)));
+      lines.push(row(padC('{' + mid[1] + '}', W)));
+      for (var rn = 0; rn < 3; rn++) lines.push(row('  ' + bench[rn] + rep(' ', 4) + scout[rn]));
+    } else {
+      for (var r = 0; r < 3; r++) {
+        lines.push(row('  ' + bench[r] + rep(' ', 8) + padC(mid[r], 5) + rep(' ', 9) + scout[r] + '  '));
+      }
     }
     var figures = '';
     if (rooms && G.prestige.count >= 2) figures += '[≋] ';
@@ -1290,17 +1330,22 @@ var RENDER = {
       if (!built || !rooms) return '{' + name + '} ·';
       return name + (count > 1 ? ' ×' + count : ' ✓');
     }
-    var lower = '  ' + [
+    var items = [
       item(b.scrapDepot, 'depot', b.scrapDepot),
       item(b.ancientWorkshop, 'workshop', 1),
       item(b.memoryTerminal, 'terminal', b.memoryTerminal),
       item(b.golemForge, 'forge', 1)
-    ].join('   ');
-    lines.push(row(lower));
+    ];
+    if (narrow) {
+      lines.push(row('  ' + items[0] + '   ' + items[1]));
+      lines.push(row('  ' + items[2] + '   ' + items[3]));
+    } else {
+      lines.push(row('  ' + items.join('   ')));
+    }
     lines.push('╚' + rep('═', W) + '╝');
-    var taps = Math.min(b.leyTap || 0, 20);
+    var taps = Math.min(b.leyTap || 0, LEY);
     var ley = '';
-    for (var t = 0; t < 20; t++) ley += (t < taps && rooms ? '◈' : '≋') + ' ';
+    for (var t = 0; t < LEY; t++) ley += (t < taps && rooms ? '◈' : '≋') + ' ';
     lines.push('   ' + ley + ' {ley lines}');
 
     var cLit   = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : 'pnl-lit');
@@ -1330,18 +1375,65 @@ var RENDER = {
   },
 
   /* ── WORLD MAP (fog of war) ──────────── */
+  zoneState: function(id) {
+    if ((G.explore.visited || []).indexOf(id) !== -1) return 'v';
+    if (zoneUnlocked(id)) return 'u';
+    return 'l';
+  },
+
+  /* On a phone the survey is a chain, not a chart */
+  worldMapNarrow: function() {
+    var W = 30, now = Date.now(), frame = Math.floor(now / 300);
+    if (!RENDER._zoneSeen) RENDER._zoneSeen = {};
+    function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
+    function padC(s, w) { var l = Math.floor((w - s.length) / 2); return rep(' ', l) + s + rep(' ', w - s.length - l); }
+    var visitedLabels = [];
+    function label(id) {
+      var s = RENDER.zoneState(id);
+      if (s === 'v') { visitedLabels.push(DATA.zones[id].mapLabel); return padC(DATA.zones[id].mapLabel, W); }
+      if (s === 'u') {
+        if (!RENDER._zoneSeen[id]) RENDER._zoneSeen[id] = now;
+        var fresh = (now - RENDER._zoneSeen[id]) < 6000 && !reducedMotion();
+        return padC(fresh && (frame % 2) ? '▒ ? ▒ ? ▒' : '? ? ? ? ?', W);
+      }
+      return padC('▓▓▓▓▓▓▓▓▓▓▓▓', W);
+    }
+    var stem = padC('│', W);
+    var lines = [];
+    lines.push(padC('≋ A E T H O R I A ≋', W));
+    lines.push(padC('what the Scout Post has read', W));
+    lines.push('');
+    ['lattice_core', 'deep_vault', 'shattered_spire'].forEach(function(z, i) {
+      lines.push(label(z)); lines.push(stem);
+    });
+    var cath = RENDER.zoneState('cathedral_of_first_light');
+    if (cath !== 'l') {
+      if (cath === 'v') visitedLabels.push('† CATHEDRAL †');
+      lines.push(padC('├── ' + (cath === 'v' ? '† CATHEDRAL †' : '? ? ?'), W));
+    }
+    lines.push(label('sunken_district'));
+    lines.push(padC('├── ★ THE ARCHIVE', W));
+    lines.push(label('overgrown_road'));
+    lines.push(stem);
+    lines.push(label('ruined_outpost'));
+    var out = lines.join('\n');
+    out = out.replace(/\? \? \? \? \?/g, '<span class="text-dim" style="opacity:.8">? ? ? ? ?</span>')
+             .replace(/▒ \? ▒ \? ▒/g, '<span class="text-memory" style="opacity:.8">▒ ? ▒ ? ▒</span>')
+             .replace(/▓{12}/g, '<span style="opacity:.35">▓▓▓▓▓▓▓▓▓▓▓▓</span>')
+             .replace(/★ THE ARCHIVE/g, '<span class="text-gold">★ THE ARCHIVE</span>');
+    visitedLabels.forEach(function(l) { out = out.split(l).join('<span class="text-bright">' + l + '</span>'); });
+    return out;
+  },
+
   worldMap: function() {
+    if (RENDER.narrow()) return RENDER.worldMapNarrow();
     var vis = G.explore.visited || [];
     var IW = 42;
     function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
     function padR(s, w) { return s + rep(' ', w - s.length); }
     function padC(s, w) { var l = Math.floor((w - s.length) / 2); return rep(' ', l) + s + rep(' ', w - s.length - l); }
     function row(inner) { return '  ║' + padR(inner, IW) + '║'; }
-    function state(id) {
-      if (vis.indexOf(id) !== -1) return 'v';
-      if (zoneUnlocked(id)) return 'u';
-      return 'l';
-    }
+    function state(id) { return RENDER.zoneState(id); }
     var visitedLabels = [];
     var now = Date.now(), frame = Math.floor(now / 300);
     if (!RENDER._zoneSeen) RENDER._zoneSeen = {};

@@ -1083,8 +1083,58 @@ html[data-theme="parchment"] ::-webkit-scrollbar-thumb { background: var(--dim);
 }
 
 /* ── RESPONSIVE ────────────────────────── */
-@media (max-width: 600px) {
-  #game-container { padding: 12px; }
-  .combat-stage { flex-direction: column; align-items: center; }
-  .hero-panel { flex-direction: column; }
+@media (max-width: 620px) {
+  #game-container { padding: 10px 8px 40px; }
+  #content { min-height: 300px; }
+
+  .combat-stage { flex-direction: column; align-items: center; gap: 10px; }
+  .hero-panel   { flex-direction: column; gap: 14px; }
+
+  /* the ASCII panels have their own narrow layouts; keep them from spilling */
+  .archive-panel, .world-map, .shelf { font-size: 0.8rem; line-height: 1.3; }
+  .zone-art { font-size: 0.78rem; }
+
+  /* the ─────── rules have no break opportunities; let them run off the edge instead of widening the page */
+  .section-header, .log-header, .explore-label, .relic-zone-name, .craft-slot-label {
+    white-space: nowrap; overflow: hidden;
+  }
+  .section-header > span:first-child { overflow: hidden; }
+
+  .header-top { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .game-title { font-size: 1.1rem; letter-spacing: 3px; }
+  .resource-bar { gap: 10px; font-size: 0.86rem; }
+  .nav-btn { padding: 5px 9px; font-size: 0.8rem; }
+  #nav { gap: 3px; margin-bottom: 16px; }
+
+  /* rows stack instead of squeezing */
+  .building-row, .craft-row { flex-wrap: wrap; }
+  .bld-cost   { text-align: left; min-width: 0; }
+  .craft-actions { width: 100%; justify-content: space-between; }
+  .inv-item   { flex-wrap: wrap; }
+  .equip-slot { flex-wrap: wrap; }
+  .equip-slot-stats { text-align: left; flex-basis: 100%; }
+
+  /* the zone art sits above its text rather than beside it */
+  .zone-layout { flex-direction: column; gap: 6px; }
+  .zone-art { border-left: none; border-top: 1px solid var(--border); padding: 6px 0 0; }
+
+  .save-row { flex-direction: column; }
+  .save-box { width: 100%; }
+  .mix-row input[type=range] { width: 100%; min-width: 90px; }
+  .mix-row label { min-width: 68px; }
+  .theme-row { flex-wrap: wrap; }
+  .theme-desc { flex-basis: 100%; }
+  .track-desc { flex-basis: 100%; margin-left: 24px; }
+
+  .combat-log { min-height: 110px; max-height: 150px; }
+  .relic-entry { flex-direction: column; gap: 8px; }
+  .terminal-scroll { height: 180px; font-size: 0.7rem; }
+  #notification-area { top: 8px; right: 8px; left: 8px; }
+  .notification { max-width: none; }
+}
+
+/* Standalone (installed) — the app owns the whole window */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: window-controls-overlay) {
+  body { overscroll-behavior: none; }
+  #game-container { padding-top: max(20px, env(safe-area-inset-top)); }
 }
