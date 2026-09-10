@@ -229,12 +229,12 @@ Suggested after v1.3.0; Robert picked 1, 3, 5 and 7.
 | 1 | Headless playthrough bot to measure pacing | ✅ `test/playthrough.js`; tuning applied (see DEVLOG) |
 | 2 | Robert's ears and eyes on the audio mix and the Parchment theme | ☐ his |
 | 3 | Equipment art on the hero figure | ✅ |
-| 4 | The Cathedral hymn and the Lattice Core's chairs | ☐ |
+| 4 | The Cathedral hymn and the Lattice Core's chairs | ✅ v1.5.0 |
 | 5 | "While you were away" notebook page | ✅ |
-| 6 | Name the golem | ☐ |
+| 6 | Name the golem | ✅ v1.5.0 |
 | 7 | Night in the valley (real clock) | ✅ |
 | 8 | Architect Mode as the prequel (play Lirien, disassemble the Archive) | ☐ L |
-| 9 | Export your run as "A Record in Full" | ☐ |
+| 9 | Export your run as "A Record in Full" | ✅ v1.5.0 |
 | 10 | Read the book from inside the game after the ending | ☐ |
 | 11 | PWA + GitHub Pages | ☐ |
 | 12 | Mobile pass for the 48-column panel | ☐ |

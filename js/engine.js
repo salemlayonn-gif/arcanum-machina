@@ -37,6 +37,7 @@ var Engine = {
       return;
     }
 
+    if (G.scene) { Scene.tick(now); RENDER.markDirty(); }
     Engine.checkCrafting(now);
     Engine.checkExplore(now);
     Engine.checkCombatTurn(now);
@@ -162,6 +163,8 @@ var Engine = {
     if (!G.explore.active) return;
     if (now < G.explore.endTime) return;
 
+    if (G.explore.mode === 'hymn') { Engine.resolveHymn(); return; }
+
     var zone = DATA.zones[G.explore.zoneId];
     if (!zone) { G.explore.active = false; return; }
 
@@ -227,6 +230,21 @@ var Engine = {
     if (gained.length) msg += ' Recovered: ' + gained.join(', ') + '.';
     else msg += ' Nothing this time.';
     addLog(msg, 'log-loot');
+  },
+
+  /* The hymn ends: the capacitors come back full — fuller than the lines alone would have made them */
+  resolveHymn: function() {
+    G.explore.active = false;
+    G.explore.mode = null;
+    var before = G.res.mana;
+    resAdd('mana', G.resCap.mana);
+    G.seeds.hymnCount = (G.seeds.hymnCount || 0) + 1;
+    G.seeds.lastHymnAt = G.playTime;
+    var got = Math.floor(G.res.mana - before);
+    addLog('The hymn ends. The capacitors are full' + (got > 0 ? ' — +' + fmt(got) + ' mana' : '') + '. Fuller than the lines alone would have made them.', 'log-loot');
+    if (G.seeds.hymnCount === 1) addLog('The choir was not wrong. They were using their ears instead of instruments.', 'log-lore');
+    if (typeof Sounds !== 'undefined') Sounds.recognition();
+    RENDER.markDirty();
   },
 
   checkCombatTurn: function(now) {
@@ -379,6 +397,61 @@ var Engine = {
     }
   }
 };
+
+/* ── SCENES — a room, some lines, nothing to win ── */
+var Scene = {
+  play: function(id) {
+    var s = DATA.scenes[id];
+    if (!s || G.scene || G.awakening || G.ending || G.combat.active || G.explore.active) return;
+    G.scene = { id: id, start: Date.now(), shown: 0 };
+    G.ui.screen = 'map';
+    RENDER.markDirty();
+  },
+  tick: function(now) {
+    var sc = G.scene; if (!sc) return;
+    var s = DATA.scenes[sc.id];
+    sc.shown = Math.min(s.lines.length, Math.floor((now - sc.start) / 3500) + 1);
+  },
+  end: function() {
+    var sc = G.scene; if (!sc) return;
+    var s = DATA.scenes[sc.id];
+    if (sc.shown < s.lines.length) return;
+    G.scene = null;
+    if (s.onEnd) s.onEnd();
+    RENDER.markDirty();
+  }
+};
+
+/* ── NAME THE GOLEM ────────────────────── */
+function nameGolem() {
+  var el = document.getElementById('golem-name-input');
+  var name = heroNameSafe(el ? el.value : '');
+  if (!name) return;
+  var first = !G.golemName;
+  G.golemName = name;
+  addLog(first
+    ? 'You call it ' + name + '. It does not react. It does not need to.'
+    : 'You call it ' + name + ' now.', 'log-lore');
+  if (typeof Sounds !== 'undefined') Sounds.recognition();
+  if (el) el.blur();
+  RENDER.markDirty();
+}
+
+/* ── A RECORD IN FULL — export this run ── */
+function exportRecord() {
+  var text = buildRecord();
+  var box = document.getElementById('record-box');
+  if (box) { box.value = text; box.hidden = false; }
+  try {
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'arcanum-machina-record-' + (G.heroName || 'archivist').replace(/[^\w-]+/g, '_').toLowerCase() + '.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 2000);
+  } catch(e) {}
+  showNotification('The record is written.', 'notif-loot');
+}
 
 /* ── SCAVENGE ACTION ───────────────────── */
 function doScavenge() {

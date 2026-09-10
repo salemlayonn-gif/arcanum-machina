@@ -1,5 +1,23 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-11 (later) — v1.5.0: the hymn, the chairs, a name, the record
+
+- **The hymn** (`Exploration.attendHymn`): at the Cathedral, once every ten minutes of play, a 90 s wait
+  (scaled by the Awakening multiplier) at the back of the nave; the capacitors come back full. The explore bar
+  becomes notes filling the nave; the score plays the organ voice meanwhile. First hymn unlocks the record
+  *The Hymn*; three hymns, the margin note *Ears Instead of Instruments* (mana/s +0.3).
+- **The chairs** (`Scene`, `DATA.scenes.core_chairs`): a small scene system — a room, lines arriving every
+  3.5 s, a button, nothing to win. [SIT DOWN] at the Lattice Core; six lines; [STAND UP]. Record *The Chair*,
+  margin note *A Chair, Sat In* (Max HP +10). The chair is left a little turned toward the door.
+- **Name the golem** (`nameGolem`, `G.golemName`, `G.golemSeen`): an inline input in the Hero tab (no
+  `prompt()`); the name follows it into combat, and it reacts once per zone per cycle (`DATA.golemLines`).
+  Margin note *It Has a Name*.
+- **A Record in Full** (`buildRecord`, `exportRecord`): CONFIG → [WRITE THE RECORD] builds this run as one text
+  file — every record in the order it was found (partially decoded ones say so), the margin notes, the relics,
+  the Awakenings, the companion — downloads it and shows it in a box for copying.
+
+---
+
 ## Session 2026-09-11 — v1.4.0: the playthrough bot, and three quiet wins
 
 - **`test/playthrough.js`** — a greedy player drives the real game at accelerated time and prints a milestone

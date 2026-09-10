@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.4.0',
+  version: '1.5.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -124,6 +124,13 @@ var G = {
 
   /* One-shot narrative events already seen (kept through Awakenings) */
   seeds: {},
+
+  /* The golem's name (kept) and which places it has reacted to this cycle */
+  golemName: '',
+  golemSeen: {},
+
+  /* A scene in progress (transient): { id, start, shown } */
+  scene: null,
 
   /* UI state */
   ui: {
@@ -388,6 +395,7 @@ var ZONE_PLACE = {
 function currentPlace() {
   if (G.ending) return 'core';
   if (G.awakening) return 'archive';
+  if (G.scene && DATA.scenes[G.scene.id]) return DATA.scenes[G.scene.id].place || 'archive';
   if (G.combat.active && G.combat.zoneId) return ZONE_PLACE[G.combat.zoneId] || 'archive';
   if (G.explore.active && G.explore.zoneId) return ZONE_PLACE[G.explore.zoneId] || 'archive';
   return 'archive';
@@ -499,6 +507,8 @@ function saveGame() {
       decoding: G.decoding,
       loreAt: G.loreAt,
       seeds: G.seeds,
+      golemName: G.golemName,
+      golemSeen: G.golemSeen,
       veritasHint: G.veritasHint,
       veritasTransmission: G.veritasTransmission,
       savedAt: Date.now()
@@ -539,6 +549,8 @@ function loadGame() {
     G.decoding = data.decoding || {};
     G.loreAt   = data.loreAt || {};
     G.seeds    = data.seeds || {};
+    G.golemName = heroNameSafe(data.golemName || '');
+    G.golemSeen = data.golemSeen || {};
     if (G.loreUnlocked.length && !G.flags.loreVisible) G.flags.loreVisible = true;
 
     /* Offline progress — and the notebook page for it */
@@ -629,6 +641,63 @@ function resetForPrestige(keepDeep) {
   G.veritasHint = { lastTime: G.playTime, count: 0 };
   G.veritasTransmission = { lastTime: G.playTime, count: 0 };
   G.relicsNew   = [];
+  G.golemSeen   = {};
+  G.scene       = null;
+}
+
+function golemName() {
+  return (G.golemName && G.golemName.length) ? G.golemName : 'the golem';
+}
+
+/* ── A RECORD IN FULL — this run, as a text document ── */
+function buildRecord() {
+  var name = (G.heroName && G.heroName.trim()) ? G.heroName.trim() : 'Archivist';
+  var L = [];
+  var rule = '═══════════════════════════════════════════════════════════';
+  L.push('ARCANUM MACHINA — A RECORD IN FULL');
+  L.push('Being the Field Notes, Recovered Fragments and Margin Notes of ' + name + ', Archivist-Technomage');
+  L.push(rule);
+  L.push(formatTimeProse(G.playTime) + ' in the valley · ' + G.prestige.count + ' Awakening' + (G.prestige.count === 1 ? '' : 's') +
+         ' · ' + G.stats.exploreRuns + ' roads walked · ' + G.stats.enemiesDefeated + ' encounters resolved · ' + G.stats.itemsCrafted + ' things made at the bench');
+  if (G.golemName) L.push('Companion: ' + G.golemName + '.');
+  L.push('');
+  L.push('I. FIELD NOTES AND RECOVERED RECORDS — in the order they were found');
+  L.push(rule);
+  G.loreUnlocked.forEach(function(id) {
+    var e = getLoreEntry(id); if (!e) return;
+    L.push('');
+    L.push('── ' + e.title + ' ──');
+    L.push(e.chapter);
+    L.push('');
+    if (isLoreDecoded(id)) L.push(loreText(e.text));
+    else {
+      var d = G.decoding[id] || { done: 0 };
+      var segs = loreSegments(e).slice(0, d.done).map(loreText);
+      if (segs.length) L.push(segs.join('\n\n'));
+      L.push('[ the remaining segments are still on the Terminal ]');
+    }
+  });
+  L.push('');
+  L.push('II. MARGIN NOTES');
+  L.push(rule);
+  G.annotations.forEach(function(id) {
+    for (var i = 0; i < DATA.annotations.length; i++) if (DATA.annotations[i].id === id) { L.push('· ' + DATA.annotations[i].title + ' — ' + DATA.annotations[i].note); break; }
+  });
+  L.push('');
+  L.push('III. RELICS');
+  L.push(rule);
+  if (!G.relics.length) L.push('· none yet');
+  G.relics.forEach(function(id) { var r = DATA.relics[id]; if (r) L.push('· ' + r.name + ' — ' + r.flavor); });
+  L.push('');
+  L.push('IV. THE AWAKENINGS');
+  L.push(rule);
+  for (var k = 0; k < G.prestige.count && k < DATA.prestigeLevels.length; k++) L.push('· ' + (k + 1) + '. ' + DATA.prestigeLevels[k].name + ' — ' + DATA.prestigeLevels[k].shortDesc);
+  if (!G.prestige.count) L.push('· none yet. The Beacon is not built.');
+  if (G.flags.ended) { L.push(''); L.push('"Ask me again in another thousand years. And we will answer together."'); }
+  L.push('');
+  L.push('— ' + name);
+  L.push('  The Archive, Aethoria');
+  return L.join('\n');
 }
 
 /* ── NUMBER FORMATTING ─────────────────── */

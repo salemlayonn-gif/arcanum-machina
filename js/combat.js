@@ -7,7 +7,7 @@ var Combat = {
 
   startFight: function(zoneId) {
     if (G.combat.active) return;
-    if (G.awakening || G.ending) return;
+    if (G.awakening || G.ending || G.scene) return;
     if (G.explore.active) {
       addLog('You are still out on the road. Wait until you are back.', '');
       return;
@@ -100,7 +100,13 @@ var Combat = {
       Combat.combatLog('His arm is slow. He has been walking for days. He is exhausted.', 'cl-system');
     }
     if (G.combat.golemHp > 0) {
-      Combat.combatLog('The golem steps up beside you.', 'cl-system');
+      var gname = golemName();
+      Combat.combatLog((G.golemName ? gname : 'The golem') + ' steps up beside you.', 'cl-system');
+      if (!G.golemSeen) G.golemSeen = {};
+      if (!G.golemSeen[zoneId] && DATA.golemLines[zoneId]) {
+        G.golemSeen[zoneId] = true;
+        Combat.combatLog(DATA.golemLines[zoneId], 'cl-system');
+      }
     }
 
     addLog(enemy.name + ' — ' + zone.name + '.', 'log-combat');
@@ -173,7 +179,7 @@ var Combat = {
       var golemDmg = Math.max(2, golemBase - Math.floor(enemyDef / 4) + Math.floor(Math.random() * 4));
       G.combat.enemyHp -= golemDmg;
       if (typeof Sounds !== 'undefined') Sounds.clank();
-      Combat.combatLog('The golem strikes for ' + golemDmg + '.', 'cl-hero');
+      Combat.combatLog((G.golemName ? golemName() : 'The golem') + ' strikes for ' + golemDmg + '.', 'cl-hero');
     }
 
     if (G.combat.enemyHp <= 0) {
@@ -373,7 +379,7 @@ var Combat = {
     spendResources(cost);
     var repairHp = Math.floor(G.combat.golemMaxHp * 0.4);
     G.combat.golemHp = repairHp;
-    Combat.combatLog('You re-seat the golem\'s core. It stands.', 'cl-hero');
+    Combat.combatLog('You re-seat ' + (G.golemName ? golemName() + '\'s' : 'the golem\'s') + ' core. It stands.', 'cl-hero');
     addLog('Golem repaired in the field.', 'log-combat');
     RENDER.markDirty();
   }

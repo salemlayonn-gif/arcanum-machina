@@ -4,8 +4,35 @@
 
 var Exploration = {
 
+  /* The Cathedral: attend the hymn. Slow, and the mana comes back charged. */
+  hymnCooldown: 600,
+  canAttendHymn: function() {
+    if ((G.explore.visited || []).indexOf('cathedral_of_first_light') === -1) return false;
+    var last = (G.seeds || {}).lastHymnAt;
+    if (last !== undefined && G.playTime - last < Exploration.hymnCooldown) return false;
+    return true;
+  },
+  hymnRestLeft: function() {
+    var last = (G.seeds || {}).lastHymnAt;
+    if (last === undefined) return 0;
+    return Math.max(0, Exploration.hymnCooldown - (G.playTime - last));
+  },
+  attendHymn: function() {
+    if (G.awakening || G.ending || G.scene) return;
+    if (G.explore.active || G.combat.active) return;
+    if (!Exploration.canAttendHymn()) return;
+    var duration = Math.max(30000, Math.floor(90000 * prestigeTimeMult()));
+    G.explore.active    = true;
+    G.explore.mode      = 'hymn';
+    G.explore.zoneId    = 'cathedral_of_first_light';
+    G.explore.startTime = Date.now();
+    G.explore.endTime   = Date.now() + duration;
+    addLog('You stand at the back of the nave. Your instruments stay in the pack.', '');
+    RENDER.markDirty();
+  },
+
   startExplore: function(zoneId) {
-    if (G.awakening || G.ending) return;
+    if (G.awakening || G.ending || G.scene) return;
     if (G.explore.active) {
       addLog('You are already out. One road at a time.', '');
       return;
@@ -19,6 +46,7 @@ var Exploration = {
 
     var duration = getExploreTime(zoneId);
     G.explore.active    = true;
+    G.explore.mode      = null;
     G.explore.zoneId    = zoneId;
     G.explore.startTime = Date.now();
     G.explore.endTime   = Date.now() + duration;
@@ -33,6 +61,7 @@ var Exploration = {
   cancelExplore: function() {
     if (!G.explore.active) return;
     G.explore.active = false;
+    if (G.explore.mode === 'hymn') { G.explore.mode = null; addLog('You leave before the last verse.', ''); RENDER.markDirty(); return; }
     if (G.buffs) G.buffs.exploreSpeedBonus = 0;
     if (typeof Music !== 'undefined') Music.autoRestore();
     addLog('You turn back.', '');

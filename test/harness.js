@@ -175,6 +175,32 @@ assert(formatTimeProse(50)==='a minute' && formatTimeProse(11520)==='3 hours 12 
 G.hero.equipment = { weapon: null, armor: null, accessory: null };
 assert(isNight(23) && isNight(3) && !isNight(12), 'isNight by hour');
 
+console.log('L. hymn, chairs, golem name, the record');
+G.explore.visited=['cathedral_of_first_light','lattice_core']; G.explore.active=false; G.combat.active=false; G.combat.result=null; G.seeds={}; G.playTime=5000; G.prestige.count=0;
+G.buildings={manaConduit:4}; Engine.checkBuildingCapEffects(); G.res.mana=10;
+assert(Exploration.canAttendHymn(), 'hymn available at the Cathedral');
+Exploration.attendHymn(); assert(G.explore.active && G.explore.mode==='hymn', 'hymn in progress');
+Engine.checkExplore(G.explore.endTime + 1);
+assert(!G.explore.active && G.res.mana===G.resCap.mana && G.seeds.hymnCount===1 && !Exploration.canAttendHymn(), 'hymn fills the capacitors and rests the choir');
+G.loreUnlocked=[]; Engine.checkLoreUnlocks(); assert(G.loreUnlocked.indexOf('cathedral_hymn')!==-1, 'the hymn record');
+Scene.play('core_chairs'); assert(G.scene && G.scene.id==='core_chairs', 'scene started');
+Scene.tick(G.scene.start + 3500*6 + 10); assert(G.scene.shown===6, 'all six lines shown in time');
+assert(strip(RENDER.screenScene()).indexOf('STAND UP')!==-1, 'stand up offered');
+Scene.end(); assert(!G.scene && G.seeds.satInChairs, 'scene ended, chair sat in');
+Engine.checkLoreUnlocks(); assert(G.loreUnlocked.indexOf('core_chairs')!==-1, 'the chair record');
+G.golemName=''; G.buildings.golemForge=1; G.buildings.scoutPost=1; G.golemSeen={}; G.combat.cooldownUntil=0; G.hero.hp=50; G.stats.enemiesDefeated=10; G.seeds.wolfStare=true; G.seeds.tiredBandit=true; Math.random=()=>0;
+Combat.startFight('overgrown_road');
+assert(G.combat.log.some(l=>l.msg==='The golem steps up beside you.') && G.combat.log.some(l=>l.msg.indexOf('scans the treeline')!==-1), 'unnamed golem, road line once');
+Combat.flee(); Combat.clearResult(); G.combat.cooldownUntil=0;
+global.document.getElementById = function(id){ return id==='golem-name-input' ? { value: 'Ferro', blur(){} } : null; };
+nameGolem(); assert(G.golemName==='Ferro', 'golem named');
+global.document.getElementById = () => null;
+Combat.startFight('overgrown_road');
+assert(G.combat.log.some(l=>l.msg==='Ferro steps up beside you.') && !G.combat.log.some(l=>l.msg.indexOf('scans the treeline')!==-1), 'named golem, road line not repeated');
+Combat.flee(); Combat.clearResult(); Math.random=realRandom;
+let rec = buildRecord();
+assert(rec.indexOf('ARCANUM MACHINA — A RECORD IN FULL')===0 && rec.indexOf('The Hymn')!==-1 && rec.indexOf('The Chair')!==-1 && rec.indexOf('Companion: Ferro')!==-1 && rec.indexOf('IV. THE AWAKENINGS')!==-1, 'record contains title, records and companion');
+
 console.log('I. content sanity');
 assert(DATA.veritasTransmissions.every(t=>t.text.startsWith('PARTIAL')), 'no Caldris in transmissions');
 let coh = DATA.veritasTransmissions.map(t=>parseInt(t.text.match(/Coherence: (\d+)/)[1])); assert(coh.every((c,i)=>i===0||c>coh[i-1]), 'coherence ascending: '+coh.join(','));

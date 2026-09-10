@@ -117,6 +117,7 @@ var RENDER = {
     var html;
     if (G.ending)         html = RENDER.screenEnding();
     else if (G.awakening) html = RENDER.screenAwakening();
+    else if (G.scene)     html = RENDER.screenScene();
     else switch (G.ui.screen) {
       case 'archive':  html = RENDER.screenArchive();  break;
       case 'map':      html = RENDER.screenMap();      break;
@@ -493,11 +494,12 @@ var RENDER = {
       if (exploreInProgress) {
         var pct  = Exploration.getExploreProgress();
         var left = formatTime(Exploration.getExploreTimeLeft() / 1000);
+        var hymn = G.explore.mode === 'hymn';
         html += '<div class="explore-status">' +
-                '<div class="explore-label">ON THE ROAD — ' + (visited ? zone.name.toUpperCase() : '? ? ?') + '</div>' +
-                '<div class="progress-wrap">' + RENDER.roadProgress(pct) +
+                '<div class="explore-label">' + (hymn ? 'IN THE NAVE — THE HYMN' : 'ON THE ROAD — ' + (visited ? zone.name.toUpperCase() : '? ? ?')) + '</div>' +
+                '<div class="progress-wrap">' + (hymn ? RENDER.hymnProgress(pct) : RENDER.roadProgress(pct)) +
                 '<span class="text-dim">' + left + '</span></div>' +
-                '<button class="btn" style="margin-top:6px;font-size:0.79rem;" onclick="Exploration.cancelExplore()">[TURN BACK]</button>' +
+                '<button class="btn" style="margin-top:6px;font-size:0.79rem;" onclick="Exploration.cancelExplore()">' + (hymn ? '[LEAVE EARLY]' : '[TURN BACK]') + '</button>' +
                 '</div>';
       } else {
         var exploreDisabled = (G.explore.active || G.combat.active) ? ' disabled' : '';
@@ -518,6 +520,31 @@ var RENDER = {
       }
 
       html += '</div>';
+
+      // The Cathedral: attend the hymn
+      if (zid === 'cathedral_of_first_light' && visited) {
+        var busyH = G.explore.active || G.combat.active;
+        if (Exploration.canAttendHymn()) {
+          html += '<div style="margin-top:8px;font-size:0.82rem;">' +
+            '<span class="text-dim">The scholars sing at the chancel every morning. </span>' +
+            '<button class="btn btn-arcane btn-small"' + (busyH ? ' disabled' : '') + ' onclick="Exploration.attendHymn()">[ATTEND THE HYMN]</button>' +
+            '<span class="text-dim"> · ' + formatTime(Math.max(30000, Math.floor(90000 * prestigeTimeMult())) / 1000) + ' · the capacitors come back full</span></div>';
+        } else if (!G.explore.active) {
+          html += '<div class="text-dim" style="font-size:0.79rem;margin-top:8px;font-style:italic;">The choir rests. Next hymn in ' + formatTime(Exploration.hymnRestLeft()) + ' of play.</div>';
+        }
+      }
+
+      // The Lattice Core: the chairs
+      if (zid === 'lattice_core' && visited) {
+        if (G.seeds.satInChairs) {
+          html += '<div class="text-dim" style="font-size:0.79rem;margin-top:8px;">The chairs are still here. One of them is turned a little toward the door.</div>';
+        } else {
+          var busyC = G.explore.active || G.combat.active;
+          html += '<div style="margin-top:8px;font-size:0.82rem;">' +
+            '<span class="text-dim">The Antechamber. The chairs are still here. </span>' +
+            '<button class="btn btn-memory btn-small"' + (busyC ? ' disabled' : '') + ' onclick="Scene.play(\'core_chairs\')">[SIT DOWN]</button></div>';
+        }
+      }
 
       // The Spire's administrative terminal
       if (zid === 'shattered_spire' && visited) {
@@ -591,7 +618,7 @@ var RENDER = {
       var golemHpPct = Combat.hpPct(G.combat.golemHp, G.combat.golemMaxHp);
       html += '<div class="combatant">' +
         '<pre class="ascii-art golem-art">' + DATA.ASCII.golem_ally + '</pre>' +
-        '<div class="combatant-name">Golem</div>' +
+        '<div class="combatant-name">' + escapeHtml(G.golemName || 'Golem') + '</div>' +
         '<div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill hp-mid" style="width:' + golemHpPct + '%"></div></div>' +
         '<span>' + Math.ceil(G.combat.golemHp) + '/' + G.combat.golemMaxHp + '</span></div>' +
         '</div>';
@@ -805,10 +832,14 @@ var RENDER = {
       var golemMaxHp = 30 + G.hero.level * 5;
       var golemLastHp = G.combat.golemHp > 0 ? G.combat.golemHp : golemMaxHp;
       var golemStatus = G.combat.active ? 'IN COMBAT' : 'STANDBY';
-      html += '<div class="section-header" style="margin-top:16px;">── GOLEM COMPANION ─────────────────────────────</div>';
+      html += '<div class="section-header" style="margin-top:16px;">── ' + (G.golemName ? escapeHtml(G.golemName.toUpperCase()) : 'GOLEM COMPANION') + ' ─────────────────────────────</div>';
       html += '<div style="display:flex;align-items:flex-start;gap:16px;padding:8px 0;">';
       html += '<pre class="ascii-art golem-art" style="margin:0;">' + DATA.ASCII.golem_ally + '</pre>';
       html += '<div style="font-size:0.86rem;line-height:2;color:var(--dim);">';
+      html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+        '<span class="text-dim">' + (G.golemName ? 'Name:' : 'It has no name yet. Give it one.') + '</span>' +
+        '<input type="text" id="golem-name-input" class="game-input" style="width:150px;font-size:0.86rem;padding:3px 8px;letter-spacing:1px;" maxlength="20" value="' + escapeHtml(G.golemName || '') + '" placeholder="…" autocomplete="off" onkeydown="if(event.key===\'Enter\'){nameGolem();}">' +
+        '<button class="btn btn-tech btn-small" onclick="nameGolem()">[' + (G.golemName ? 'RENAME' : 'NAME IT') + ']</button></div>';
       html += '<div><span class="text-dim">Status:</span> <span class="text-tech">' + golemStatus + '</span></div>';
       html += '<div><span class="text-dim">Max HP:</span> <span>' + golemMaxHp + '</span> <span class="text-dim">(base 30 + ' + G.hero.level * 5 + ' from level)</span></div>';
       html += '<div><span class="text-dim">Damage:</span> <span>' + (6 + Math.floor(G.hero.level / 2)) + '–' + (6 + Math.floor(G.hero.level / 2) + 3) + '</span> <span class="text-dim">(scales with hero level)</span></div>';
@@ -1057,6 +1088,13 @@ var RENDER = {
     html += '<textarea id="save-import-box" class="save-box" placeholder="Paste your save code here, then click Import."></textarea>';
     html += '</div>';
     html += '</div>';
+    html += '</div>';
+
+    html += '<div class="config-section">';
+    html += '<div class="section-header">── THE RECORD ──────────────────────────────────</div>';
+    html += '<div class="text-dim" style="font-size:0.85em;margin-bottom:10px;">Everything this ' + escapeHtml(G.heroName || 'Archivist') + ' has found, in the order it was found — the field notes, the recovered fragments, the margin notes, the relics — as one text file. A Record in Full.</div>';
+    html += '<button class="btn btn-arcane" onclick="exportRecord()">[WRITE THE RECORD]</button>';
+    html += '<textarea id="record-box" class="save-box" readonly hidden style="height:180px;margin-top:10px;width:100%;font-size:0.8rem;"></textarea>';
     html += '</div>';
 
     html += '<div class="config-section">';
@@ -1315,6 +1353,14 @@ var RENDER = {
     return out;
   },
 
+  /* The hymn: notes filling the nave */
+  hymnProgress: function(pct) {
+    var len = 26, filled = Math.min(len, Math.floor((pct / 100) * len));
+    var s = '';
+    for (var i = 0; i < len; i++) s += (i < filled) ? ((i % 3 === 1) ? '♪' : '─') : '·';
+    return '<span class="road-line" style="color:var(--gold)">  ' + s + '</span>';
+  },
+
   /* The scout on the road: a figure walking the paving; darker after nightfall */
   roadProgress: function(pct) {
     var len = 26, pos = Math.min(len - 1, Math.floor((pct / 100) * len));
@@ -1322,6 +1368,20 @@ var RENDER = {
     for (var i = 0; i < len; i++) s += (i === pos) ? 'o' : ((i % 2) ? '─' : '·');
     var night = isNight();
     return '<span class="road-line' + (night ? ' road-night' : '') + '">' + (night ? '☾ ' : '  ') + s + '</span>';
+  },
+
+  /* ── A SCENE ─────────────────────────── */
+  screenScene: function() {
+    var sc = G.scene, s = DATA.scenes[sc.id];
+    var html = '<div class="section scene-screen">';
+    html += '<div class="section-header">── ' + s.title + ' ─────────────────────────────</div>';
+    if (s.art && DATA.zones[s.art]) html += '<pre class="zone-art ' + (DATA.zones[s.art].asciiColor || 'text-dim') + '" style="border:none;opacity:.9;">' + RENDER.liveArt(DATA.zones[s.art].ascii, s.art) + '</pre>';
+    html += '<div class="awakening-lines">';
+    for (var i = 0; i < sc.shown; i++) html += '<div class="awakening-line scene-line">' + escapeHtml(s.lines[i]) + '</div>';
+    html += '</div>';
+    if (sc.shown >= s.lines.length) html += '<div style="margin-top:14px;"><button class="btn btn-memory" onclick="Scene.end()">[ ' + s.button + ' ]</button></div>';
+    html += '</div>';
+    return html;
   },
 
   /* ── THE ENDING ──────────────────────── */

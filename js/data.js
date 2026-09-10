@@ -1328,6 +1328,30 @@ DATA.annotations = [
     bonusDesc: 'Defense +2'
   },
   {
+    id: 'the_hymn',
+    title: 'Ears Instead of Instruments',
+    note: 'The choir was not wrong. They were using their ears instead of instruments. So, it turns out, was I.',
+    condition: function(G) { return ((G.seeds || {}).hymnCount || 0) >= 3; },
+    bonus: { manaPerSec: 0.3 },
+    bonusDesc: 'Mana/s +0.3'
+  },
+  {
+    id: 'the_chairs',
+    title: 'A Chair, Sat In',
+    note: 'A chair has been sat in for the first time in a thousand years. Somewhere in the distributed dark, something noted it and kept it.',
+    condition: function(G) { return !!(G.seeds || {}).satInChairs; },
+    bonus: { maxHp: 10 },
+    bonusDesc: 'Max HP +10'
+  },
+  {
+    id: 'named',
+    title: 'It Has a Name',
+    note: 'I named it. It did not react. It did not need to. I find I address it by the name anyway, in the field, under my breath, the way you do.',
+    condition: function(G) { return !!(G.golemName && G.golemName.length); },
+    bonus: {},
+    bonusDesc: null
+  },
+  {
     id: 'complete_record',
     title: 'The Complete Record',
     note: 'VERITAS has been watching. It watched every expedition, every fight, every night I nearly gave up. Always. The archive is complete.',
@@ -1994,6 +2018,48 @@ The chairs are still here.`
   },
 
   {
+    id: 'cathedral_hymn',
+    title: 'The Hymn',
+    chapter: 'Chapter VI: The Ley Line Truth',
+    unlockCondition: function(G) { return ((G.seeds || {}).hymnCount || 0) >= 1; },
+    asciiColor: 'text-gold',
+    ascii: `
+     †           †
+  ╔═════════════════╗
+  ║  ♪   ♪   ♪   ♪  ║
+  ║   o o o o o o   ║
+  ║  /|\\/|\\/|\\/|\\  ║
+  ╚════════◈════════╝  `,
+    text: `I attended the hymn today. I stood at the back of the nave with my instruments in my pack and did not take them out.
+
+The chancel crystal boosts output when the scholars sing near it — I have the readings from the door. But standing there, what I noticed was not the readings. It was that two hundred people were tending a ley junction with their voices, every morning, for a thousand years, without knowing what it was, because it was beautiful and they had been told it was holy.
+
+VERITAS suggested the temple. Give them something beautiful to protect.
+
+The capacitors were full when I got back. Fuller than the lines alone would have made them. I have stopped pretending I can explain that with the readings.`
+  },
+
+  {
+    id: 'core_chairs',
+    title: 'The Chair',
+    chapter: 'Chapter VII: The Watching Eye',
+    unlockCondition: function(G) { return !!(G.seeds || {}).satInChairs; },
+    asciiColor: 'text-memory',
+    ascii: `
+   ┌─┐  ┌─┐  ┌─┐  ┌─┐
+   │ │  │ │  │o│  │ │
+   ┴─┴  ┴─┴  ┴─┴  ┴─┴
+        still level  `,
+    text: `I sat in one of the chairs.
+
+I want to record that nothing happened, because the record should be accurate. The current underfoot was the same current. The chair was a chair — good First Age alloy, still level after a thousand years, kept by the Preservers because they were told to keep everything.
+
+I stayed a long time anyway.
+
+When I stood up I turned it a little toward the door. I do not know for whom.`
+  },
+
+  {
     id: 'lattice_core_found',
     decode: true,
     title: 'The Antechamber — What Remains',
@@ -2626,6 +2692,39 @@ DATA.travellers = [
     text: '"In forty years of sitting with the dying," she says, "I have felt the current be gentle. Was I imagining it?" No, you say. She nods as though she had known, and had only needed one other person to say it.'
   }
 ];
+
+/* ── SCENES — a room, some lines, nothing to win ── */
+DATA.scenes = {
+  core_chairs: {
+    place: 'core',
+    title: 'THE ANTECHAMBER',
+    art: 'lattice_core',
+    lines: [
+      'The Antechamber. The room before the room where decisions were made.',
+      'The chairs are still here. The Preservers kept them, because they were told to keep everything operational, and they have never once stopped.',
+      'You sit down.',
+      'Nothing happens. The current underfoot is the same current. The chair is a chair — good First Age alloy, still level after a thousand years.',
+      'You stay a long time anyway.',
+      'Somewhere in the distributed dark, something notes that a chair has been sat in for the first time in a thousand years, and does not know what to do with that, and keeps it.'
+    ],
+    button: 'STAND UP',
+    onEnd: function() {
+      G.seeds.satInChairs = true;
+      addLog('You stand up. You leave the chair a little turned toward the door. You do not know for whom.', 'log-lore');
+    }
+  }
+};
+
+/* ── THE GOLEM — what it does when a fight begins, by place (first time each cycle) ── */
+DATA.golemLines = {
+  overgrown_road:   'It scans the treeline once, and settles.',
+  ruined_outpost:   'It slows at the gate. Something in it recognises the walls.',
+  sunken_district:  'It stops at the waterline. Then it wades in after you.',
+  shattered_spire:  'The wraiths\' frequency makes it flinch. It stays.',
+  deep_vault:       'It stands at the last step and does not follow. Not its place.',
+  cathedral_of_first_light: 'It stands very still under the vaulting, as if listening.',
+  lattice_core:     'It is home. It does not know the word. It knows the room.'
+};
 
 /* ── AWAKENING — lines that change with each cycle (Part Four) ── */
 DATA.awakeningVariants = {
