@@ -115,7 +115,9 @@ var RENDER = {
     var savedScroll = combatLog ? combatLog.scrollTop : 0;
 
     var html;
-    switch (G.ui.screen) {
+    if (G.ending)         html = RENDER.screenEnding();
+    else if (G.awakening) html = RENDER.screenAwakening();
+    else switch (G.ui.screen) {
       case 'archive':  html = RENDER.screenArchive();  break;
       case 'map':      html = RENDER.screenMap();      break;
       case 'lore':     html = RENDER.screenLore();     break;
@@ -139,13 +141,14 @@ var RENDER = {
   screenArchive: function() {
     var html = '';
 
-    // Status flavor text
+    // The Archive itself, and a line of the field notes
     html += '<div class="section">';
+    html += RENDER.archivePanel({});
     html += '<div class="section-flavor">' + RENDER.getStatusFlavor() + '</div>';
     html += '</div>';
 
-    // Scavenge action (early game only, disappears once scout post is built)
-    if ((G.buildings.manaConduit || 0) >= 1 && (G.buildings.scoutPost || 0) < 1) {
+    // Search the ruins by hand (until the Scout Post gives you roads)
+    if ((G.buildings.scoutPost || 0) < 1) {
       html += RENDER.renderScavenge();
     }
 
@@ -192,32 +195,35 @@ var RENDER = {
   },
 
   getStatusFlavor: function() {
-    if (G.prestige.count >= 6) return '"Ask me again in another thousand years." — VERITAS';
-    if (G.prestige.count >= 4) return 'You are not alone in this work. You never were.';
-    if (G.prestige.count >= 2) return 'The Architects chose the Silence. Now you choose to end it.';
-    if (G.prestige.count >= 1) return 'The relic pulsed when you touched it. It knew you were coming.';
-    if ((G.buildings.resonanceBeacon || 0) >= 1) return 'The Resonance Beacon hums. Something ancient stirs beneath the earth.';
-    if ((G.buildings.golemForge || 0) >= 1) return 'In the Golem Forge, iron remembers how to wake.';
-    if ((G.buildings.ancientWorkshop || 0) >= 1) return '"It hummed when I touched it. Like it remembered." — Field Notes';
-    if ((G.buildings.scoutPost || 0) >= 1) return 'The scouts have gone out. What they return with will change everything.';
-    if ((G.buildings.runicWorkbench || 0) >= 1) return '"The old runes are not spells. They are code. Ancient, beautiful code."';
-    if ((G.buildings.manaConduit || 0) >= 3) return 'The ley lines flow. The Archive grows. Something is waking.';
-    if ((G.buildings.manaConduit || 0) >= 1) return '"The ley lines were always here. We just forgot how to listen."';
-    return 'A strange relic pulses at the centre of the dig site. The air smells of old metal and lightning.';
+    if (G.flags.ended) return 'The valley is full of students. The Terminal still displays messages, sometimes. They are always worth reading.';
+    if (G.prestige.count >= 5) return 'Every pulse gives it more of itself back. You are not only rebuilding the Archive. You are rebuilding the mind that designed it.';
+    if (G.prestige.count >= 4) return 'You were never alone in this. Not for a single day.';
+    if (G.prestige.count >= 3) return 'Every mage in Aethoria has been using a tool they do not understand. So were you.';
+    if (G.prestige.count >= 2) return 'She cried for two hours. Then she voted yes. You are working in a world that exists because of that.';
+    if (G.prestige.count >= 1) return 'The relic pulsed when you touched it. It knew you were coming. You know that now.';
+    if ((G.buildings.resonanceBeacon || 0) >= 1) return 'The Beacon hums in the main hall. Everything you have built points at it. You know what it will cost.';
+    if ((G.buildings.golemForge || 0) >= 1) return 'In the lower level, the assembly line runs a self-check every hour. It has not been asked to build anything yet.';
+    if ((G.buildings.memoryTerminal || 0) >= 1) return 'The Terminal reads a shard one layer at a time. It is slow. It is slower than you would like. It is the only way.';
+    if ((G.buildings.ancientWorkshop || 0) >= 1) return '"It hummed when I touched it. Like it remembered." — field notes, month six';
+    if ((G.buildings.scoutPost || 0) >= 1) return 'The Scout Post reads the roads under the moss. Something out there still carries current.';
+    if ((G.buildings.runicWorkbench || 0) >= 1) return 'You argued with the workbench for two days. The workbench was right.';
+    if ((G.buildings.manaConduit || 0) >= 3) return 'Lines of pale light in the walls that have not been visible in darkness for a thousand years. You sit on the floor and look at them.';
+    if ((G.buildings.manaConduit || 0) >= 1) return 'The ley current is stable. Measurable. The conduit works the way the schematics promised. The old ones were not liars.';
+    return 'The relic sits on a cleared stone in the side chamber. It has not pulsed again. It does not need to. The air smells of old metal and lightning.';
   },
 
   renderScavenge: function() {
     var now = Date.now();
     var onCooldown = now < G.scavenge.cooldownUntil;
     var timeLeft = onCooldown ? Math.ceil((G.scavenge.cooldownUntil - now) / 1000) : 0;
-    var label = onCooldown ? '[SEARCHING... ' + timeLeft + 's]' : '[SEARCH THE RUINS]';
+    var label = onCooldown ? '[WORKING... ' + timeLeft + 's]' : '[SEARCH THE RUINS]';
 
     return '<div class="section">' +
-      '<div class="section-header">── ACTIONS ─────────────────────────────────────</div>' +
+      '<div class="section-header">── BY HAND ─────────────────────────────────────</div>' +
       '<div class="building-row">' +
         '<div class="bld-left">' +
           '<div class="bld-name">Search the Ruins</div>' +
-          '<div class="bld-desc">Scavenge nearby debris for scrap. Yields 1–3 scrap. <span class="text-dim">(30s cooldown)</span></div>' +
+          '<div class="bld-desc">Work the debris in the lower level by hand. 1–3 scrap. <span class="text-dim">(30s)</span></div>' +
         '</div>' +
         '<button class="btn btn-tech"' + (onCooldown ? ' disabled' : '') + ' onclick="doScavenge()">' + label + '</button>' +
       '</div>' +
@@ -245,7 +251,7 @@ var RENDER = {
       if (hideMaxed && maxed) return;
 
       any = true;
-      var cost    = bld.baseCost(count);
+      var cost    = getBuildingCost(id, count);
       var afford  = canAfford(cost);
       var costStr = maxed ? '<span class="text-dim">BUILT</span>' : RENDER.costStr(cost);
       var btnClass = afford && !maxed ? 'btn btn-mana' : 'btn';
@@ -266,7 +272,7 @@ var RENDER = {
     if (!any) {
       var msg = hideMaxed
         ? '<span class="text-dim">All constructions complete.</span> <button class="btn btn-small" onclick="toggleHideMaxed()">[SHOW ALL]</button>'
-        : 'The relic pulses. You sense you are close to something. Keep channeling mana.';
+        : 'Nothing else is ready to be built yet. The current keeps flowing.';
       html += '<div class="text-dim" style="padding:8px;">' + msg + '</div>';
     }
 
@@ -292,7 +298,7 @@ var RENDER = {
         (G.res[recipe.output.resource] || 0) >= G.resCap[recipe.output.resource];
       var canStart = afford && freeSlot !== null && !atCap;
       var btnClass = canStart ? 'btn btn-arcane' : 'btn';
-      var timeStr  = (recipe.time / 1000).toFixed(0) + 's';
+      var timeStr  = formatTime(getCraftTime(recipe) / 1000);
       var outputStr = recipe.output.resource ?
         recipe.output.amount + '× ' + recipe.output.resource :
         (DATA.equipment[recipe.output.equipment] ? DATA.equipment[recipe.output.equipment].name : '?');
@@ -323,7 +329,7 @@ var RENDER = {
     });
 
     if (!anyRecipe) {
-      html += '<div class="text-dim" style="padding:8px;">Build more structures to unlock crafting recipes.</div>';
+      html += '<div class="text-dim" style="padding:8px;">The bench shows nothing yet. It is waiting for you to bring it something it recognises.</div>';
     }
 
     // Crafting slots
@@ -354,9 +360,9 @@ var RENDER = {
   screenMap: function() {
     var html = '';
 
-    // World map
+    // World map — drawn from what has actually been found
     html += '<div class="section">';
-    html += '<pre class="world-map">' + DATA.worldMap + '</pre>';
+    html += '<pre class="world-map">' + RENDER.worldMap() + '</pre>';
     html += '</div>';
 
     // Combat panel (if active)
@@ -378,8 +384,8 @@ var RENDER = {
         var zIdx = DATA.zoneOrder.indexOf(zid);
         var prevKnown = zIdx === 0 || DATA.zones[DATA.zoneOrder[zIdx-1]].unlockCondition(G);
         if (prevKnown) {
-          html += '<div class="zone-locked"><div class="zone-name">??? — Unknown Location</div>' +
-                  '<div class="text-dim" style="font-size:0.79rem;">Explore more to discover this area.</div></div>';
+          html += '<div class="zone-locked"><div class="zone-name">— — —</div>' +
+                  '<div class="text-dim" style="font-size:0.79rem;">The road continues past here. You are not ready for what is at the end of it.</div></div>';
         }
         return;
       }
@@ -400,8 +406,8 @@ var RENDER = {
         html += '<div class="zone-desc">' + zone.desc + '</div>';
         html += '<div class="zone-loot"><span class="text-dim">Loot:</span> ' + zone.lootHint + '</div>';
       } else {
-        html += '<div class="zone-name text-dim">??? — Uncharted Territory</div>';
-        html += '<div class="zone-desc text-dim" style="font-style:italic;">Venture in to discover what lies here.</div>';
+        html += '<div class="zone-name text-dim">? ? ?</div>';
+        html += '<div class="zone-desc text-dim" style="font-style:italic;">The Scout Post reads something here. Structural. Regular. Go and look.</div>';
       }
       html += '<div class="zone-controls">';
 
@@ -410,10 +416,10 @@ var RENDER = {
         var pct  = Exploration.getExploreProgress();
         var left = formatTime(Exploration.getExploreTimeLeft() / 1000);
         html += '<div class="explore-status">' +
-                '<div class="explore-label">SCOUTING ' + zone.name.toUpperCase() + '</div>' +
+                '<div class="explore-label">ON THE ROAD — ' + (visited ? zone.name.toUpperCase() : '? ? ?') + '</div>' +
                 '<div class="progress-wrap"><div class="progress-bar" style="max-width:200px;"><div class="progress-fill explore-fill" style="width:' + pct + '%"></div></div>' +
                 '<span class="text-dim">' + left + '</span></div>' +
-                '<button class="btn" style="margin-top:6px;font-size:0.79rem;" onclick="Exploration.cancelExplore()">[CANCEL]</button>' +
+                '<button class="btn" style="margin-top:6px;font-size:0.79rem;" onclick="Exploration.cancelExplore()">[TURN BACK]</button>' +
                 '</div>';
       } else {
         var exploreDisabled = (G.explore.active || G.combat.active) ? ' disabled' : '';
@@ -422,13 +428,14 @@ var RENDER = {
 
       // Fight button
       if (combatInProgress) {
-        html += '<span class="text-red" style="font-size:0.86rem;margin-left:8px;">⚔ IN COMBAT</span>';
+        html += '<span class="text-red" style="font-size:0.86rem;margin-left:8px;">⚔ ENGAGED</span>';
       } else if (G.combat.result) {
         html += '<button class="btn btn-mana" onclick="Combat.clearResult()">[CONTINUE]</button>';
       } else {
         var fightDisabled = (G.combat.active || G.explore.active || onCooldown) ? ' disabled' : '';
         var recoverLeft = onCooldown ? Math.ceil((G.combat.cooldownUntil - Date.now()) / 1000) : 0;
-        var fightLabel = onCooldown ? '[RECOVERING ' + recoverLeft + 's]' : '[FIGHT]';
+        var fightVerb = zid === 'deep_vault' ? '[DESCEND]' : '[FIGHT]';
+        var fightLabel = onCooldown ? '[CATCHING BREATH ' + recoverLeft + 's]' : fightVerb;
         html += '<button class="btn btn-danger"' + fightDisabled + ' onclick="Combat.startFight(\'' + zid + '\')">' + fightLabel + '</button>';
       }
 
@@ -472,10 +479,15 @@ var RENDER = {
       var enemyHpCls = Combat.getHpClass(G.combat.enemyHp, G.combat.enemyMaxHp);
       html += '<div class="combatant">' +
         '<pre class="ascii-art ' + (enemy.color || 'enemy-art') + '">' + enemy.ascii + '</pre>' +
-        '<div class="combatant-name">' + enemy.name + '</div>' +
-        '<div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill ' + enemyHpCls + '" style="width:' + enemyHpPct + '%"></div>' +
-        '</div><span>' + Math.ceil(G.combat.enemyHp) + '/' + G.combat.enemyMaxHp + '</span></div>' +
-        '</div>';
+        (enemy.backdrop ? '<pre class="ascii-art combat-backdrop">' + enemy.backdrop + '</pre>' : '') +
+        '<div class="combatant-name">' + enemy.name + '</div>';
+      if (enemy.noncombat) {
+        html += '<div class="text-dim" style="font-size:0.82rem;">sensors steady · not running down</div>';
+      } else {
+        html += '<div class="hp-bar-wrap"><div class="hp-bar"><div class="hp-fill ' + enemyHpCls + '" style="width:' + enemyHpPct + '%"></div>' +
+          '</div><span>' + Math.ceil(G.combat.enemyHp) + '/' + G.combat.enemyMaxHp + '</span></div>';
+      }
+      html += '</div>';
     }
 
     // Golem
@@ -498,12 +510,13 @@ var RENDER = {
     });
     html += '</div>';
 
-    // Spells (prestige 3+, combat active)
-    if (G.prestige.count >= 3 && G.combat.active && !G.combat.result) {
+    // Spells — the current, shaped (prestige 3+), plus relic-gated protocols
+    var visibleSpells = Spells.list.filter(Spells.visible);
+    if (visibleSpells.length && G.combat.active && !G.combat.result && !G.combat.script) {
       html += '<div class="combat-spells">';
-      html += '<div class="spells-label text-dim" style="font-size:0.79rem;margin-bottom:4px;">── SPELLS ──────</div>';
-      for (var si = 0; si < Spells.list.length; si++) {
-        var sp = Spells.list[si];
+      html += '<div class="spells-label text-dim" style="font-size:0.79rem;margin-bottom:4px;">── THE CURRENT ──────</div>';
+      for (var si = 0; si < visibleSpells.length; si++) {
+        var sp = visibleSpells[si];
         var spCanUse = Spells.canUse(sp);
         var spCls = spCanUse ? 'btn btn-arcane' : 'btn';
         html += '<button class="' + spCls + '" style="font-size:0.79rem;margin-right:4px;margin-bottom:4px;"' +
@@ -523,17 +536,16 @@ var RENDER = {
     // Controls
     html += '<div class="combat-controls">';
     if (G.combat.active) {
-      html += '<button class="btn btn-danger" onclick="Combat.flee()">[FLEE]</button>';
-      /* Golem repair button (prestige 5+, golem down) */
-      if (G.prestige.count >= 5 && G.combat.golemHp === 0 && (G.buildings.golemForge || 0) >= 1) {
+      if (!G.combat.script) html += '<button class="btn btn-danger" onclick="Combat.flee()">[WITHDRAW]</button>';
+      else html += '<span class="text-dim" style="font-size:0.82rem;">Hold still.</span>';
+      /* Golem repair (prestige 5+, golem down) */
+      if (G.prestige.count >= 5 && G.combat.golemHp === 0 && (G.buildings.golemForge || 0) >= 1 && !G.combat.script) {
         var canRepair = Math.floor(G.res.scrap || 0) >= 5 && Math.floor(G.res.etherCell || 0) >= 1;
         html += '<button class="btn' + (canRepair ? ' btn-tech' : '') + '"' +
           (canRepair ? '' : ' disabled') +
-          ' onclick="Combat.repairGolem()">[REPAIR GOLEM (5 scrap + 1 ether)]</button>';
+          ' onclick="Combat.repairGolem()">[RE-SEAT THE GOLEM · 5 scrap + 1 Ether]</button>';
       }
-    } else if (G.combat.result === 'win') {
-      html += '<button class="btn btn-mana" onclick="Combat.clearResult()">[CONTINUE]</button>';
-    } else if (G.combat.result === 'lose' || G.combat.result === 'flee') {
+    } else if (G.combat.result) {
       html += '<button class="btn btn-mana" onclick="Combat.clearResult()">[CONTINUE]</button>';
     }
     html += '</div>';
@@ -547,20 +559,40 @@ var RENDER = {
     var html = '<div class="section"><div class="section-header">── THE ARCHIVE — LORE RECORDS ──────────────────</div>';
 
     if (G.loreUnlocked.length === 0) {
-      html += '<div class="text-dim" style="padding:8px;">No records yet. Keep exploring.</div>';
+      html += '<div class="text-dim" style="padding:8px;">No records yet.</div>';
     } else {
+      var hasTerminal = getBuildingCount('memoryTerminal') >= 1;
       // Show newest first
       var unlocked = G.loreUnlocked.slice().reverse();
       unlocked.forEach(function(loreId) {
-        var entry = DATA.lore.find(function(e) { return e.id === loreId; });
+        var entry = getLoreEntry(loreId);
         if (!entry) return;
         var isNew = G.loreNew.indexOf(loreId) !== -1;
-        html += '<div class="lore-entry' + (isNew ? ' lore-new' : '') + '">' +
-          '<div class="lore-title">' + entry.title + '</div>' +
+        var decoded = isLoreDecoded(loreId);
+        html += '<div class="lore-entry' + (isNew ? ' lore-new' : '') + (decoded ? '' : ' lore-decoding') + '">' +
+          '<div class="lore-title">' + entry.title + (decoded ? '' : ' <span class="decode-tag">[ON THE TERMINAL]</span>') + '</div>' +
           '<div class="lore-chapter">' + entry.chapter + '</div>' +
-          (entry.ascii ? '<pre class="ascii-art lore-art ' + (entry.asciiColor || '') + '">' + entry.ascii + '</pre>' : '') +
-          '<div class="lore-text">' + escapeHtml(loreText(entry.text)) + '</div>' +
-        '</div>';
+          (entry.ascii ? '<pre class="ascii-art lore-art ' + (entry.asciiColor || '') + '">' + entry.ascii + '</pre>' : '');
+        if (decoded) {
+          html += '<div class="lore-text">' + escapeHtml(loreText(entry.text)) + '</div>';
+        } else {
+          var segs = loreSegments(entry);
+          var d = G.decoding[loreId] || { done: 0, progress: 0 };
+          var shown = segs.slice(0, d.done).map(function(s) { return escapeHtml(loreText(s)); }).join('<br><br>');
+          html += '<div class="lore-text">' + shown + '</div>';
+          if (!hasTerminal) {
+            html += '<div class="decode-line text-red">[ SHARD RECOVERED — NO TERMINAL TO READ IT ]</div>';
+            html += '<div class="decode-corrupt" style="font-style:italic;">It is trying to tell you something. You do not yet have the ears for it. Build a Memory Terminal.</div>';
+          } else {
+            var filled = Math.floor(d.progress * 10);
+            var bar = new Array(filled + 1).join('▓') + new Array(10 - filled + 1).join('░');
+            html += '<div class="decode-line">[ SEGMENT ' + (d.done + 1) + ' / ' + segs.length + ' — DECODING ' + bar + ' ' + Math.floor(d.progress * 100) + '% ]</div>';
+            var remaining = segs.length - d.done - 1;
+            for (var r = 0; r < Math.min(remaining, 3); r++) html += '<div class="decode-corrupt">[ SEGMENT ' + (d.done + 2 + r) + ' — CORRUPTED — awaiting decode ]</div>';
+            if (remaining > 3) html += '<div class="decode-corrupt">[ … ' + (remaining - 3) + ' more ]</div>';
+          }
+        }
+        html += '</div>';
       });
     }
 
@@ -591,13 +623,14 @@ var RENDER = {
     // Stats
     html += '<div class="hero-stats-panel">';
     var maxHp = getHeroMaxHp();
-    var hpPct  = ((G.hero.hp / maxHp) * 100).toFixed(1);
+    var curHp = getHeroHp();
+    var hpPct  = ((curHp / maxHp) * 100).toFixed(1);
     html += '<div class="stat-row"><span class="stat-label">Name</span><span class="stat-value">' + G.heroName + '</span></div>';
     html += '<div class="stat-row"><span class="stat-label">Level</span><span class="stat-value">' + G.hero.level + '</span></div>';
     html += '<div class="stat-row"><span class="stat-label">HP</span><span class="stat-value">' +
             '<div class="progress-wrap" style="margin:0;">' +
-            '<div class="progress-bar" style="width:120px;"><div class="hp-fill ' + Combat.getHpClass(G.hero.hp, maxHp) + '" style="width:' + hpPct + '%"></div></div>' +
-            '<span>' + Math.ceil(G.hero.hp) + '/' + maxHp + '</span>' +
+            '<div class="progress-bar" style="width:120px;"><div class="hp-fill ' + Combat.getHpClass(curHp, maxHp) + '" style="width:' + hpPct + '%"></div></div>' +
+            '<span>' + Math.ceil(curHp) + '/' + maxHp + '</span>' +
             '</div></span></div>';
     html += '<div class="stat-row"><span class="stat-label">Attack</span><span class="stat-value text-red">' + getHeroAttack() + '</span></div>';
     html += '<div class="stat-row"><span class="stat-label">Defense</span><span class="stat-value text-mana">' + getHeroDefense() + '</span></div>';
@@ -605,7 +638,7 @@ var RENDER = {
     html += '<div class="stat-row"><span class="stat-label">Awakenings</span><span class="stat-value text-gold">' + G.prestige.count + '</span></div>';
     if (G.buffs && (G.buffs.attackBonus > 0 || G.buffs.exploreSpeedBonus > 0)) {
       if (G.buffs.attackBonus > 0) {
-        html += '<div class="stat-row"><span class="stat-label text-gold">⚔ Stimulant</span><span class="stat-value text-gold">+' + G.buffs.attackBonus + ' ATK</span></div>';
+        html += '<div class="stat-row"><span class="stat-label text-gold">⚔ ' + (G.buffs.attackBonus >= 15 ? 'Stimulant' : 'Surer grip') + '</span><span class="stat-value text-gold">+' + G.buffs.attackBonus + ' ATK next fight</span></div>';
       }
       if (G.buffs.exploreSpeedBonus > 0) {
         html += '<div class="stat-row"><span class="stat-label text-memory">◈ Compass</span><span class="stat-value text-memory">Next explore ×' + Math.round(G.buffs.exploreSpeedBonus * 100) + '% faster</span></div>';
@@ -709,11 +742,11 @@ var RENDER = {
       var canDo = Prestige.canAwaken();
       html += '<div style="margin-top:16px;">';
       if (canDo) {
-        html += '<button class="btn btn-prestige" onclick="Prestige.doAwaken()">★ INITIATE AWAKENING</button>';
-        html += '<div class="text-dim" style="font-size:0.79rem;margin-top:6px;">This will reset most progress. Resonance and lore persist.</div>';
+        html += '<button class="btn btn-prestige" onclick="Prestige.doAwaken()">★ ACTIVATE THE BEACON</button>';
+        html += '<div class="text-dim" style="font-size:0.79rem;margin-top:6px;">The Archive dissolves back into the earth. What you know stays in you.</div>';
       } else {
-        html += '<button class="btn" disabled>★ INITIATE AWAKENING</button>';
-        html += '<div class="text-dim" style="font-size:0.79rem;margin-top:6px;">Requirements not yet met.</div>';
+        html += '<button class="btn" disabled>★ ACTIVATE THE BEACON</button>';
+        html += '<div class="text-dim" style="font-size:0.79rem;margin-top:6px;">Not yet.</div>';
       }
       html += '</div>';
     }
@@ -724,11 +757,11 @@ var RENDER = {
     html += '<div class="section">';
     html += '<div class="section-header">── RESONANCE ─────────────────────────────────────</div>';
     html += '<div class="text-dim" style="font-size:0.86rem;line-height:1.8;">';
-    html += '<div>Current Resonance: <span class="text-gold">' + fmt(G.prestige.resonance) + '</span></div>';
-    html += '<div>Total Earned: <span class="text-gold">' + fmt(G.prestige.totalEarned) + '</span></div>';
-    html += '<div>Current Bonus: <span class="text-arcane">×' + G.prestige.multiplier.toFixed(2) + ' all production</span></div>';
-    html += '<div style="margin-top:8px;color:var(--dim);font-size:0.79rem;">Resonance is the echo left behind when the Lattice stirs.</div>';
-    html += '<div style="color:var(--dim);font-size:0.79rem;">It persists through every Awakening. It grows with each cycle.</div>';
+    html += '<div>Carried: <span class="text-gold">' + fmt(G.prestige.resonance) + '</span></div>';
+    html += '<div>Earned in all: <span class="text-gold">' + fmt(G.prestige.totalEarned) + '</span></div>';
+    html += '<div>Production: <span class="text-arcane">×' + G.prestige.multiplier.toFixed(2) + '</span> · Costs: <span class="text-arcane">×' + prestigeCostMult().toFixed(2) + '</span> · Bench and roads: <span class="text-arcane">×' + prestigeTimeMult().toFixed(2) + '</span></div>';
+    html += '<div style="margin-top:8px;color:var(--dim);font-size:0.79rem;">Resonance is not stored in stone. It is stored in the person.</div>';
+    html += '<div style="color:var(--dim);font-size:0.79rem;">You cannot lose what is in you. You can only lose what is in stone.</div>';
     html += '</div>';
     html += '</div>';
 
@@ -903,7 +936,7 @@ var RENDER = {
     html += '<div class="config-section">';
     html += '<div class="section-header">── ABOUT ───────────────────────────────────────</div>';
     html += '<div style="color:var(--dim);font-size:0.85em;line-height:2;">';
-    html += '<div><span class="text-gold">ARCANUM MACHINA</span> · v1.0.0</div>';
+    html += '<div><span class="text-gold">ARCANUM MACHINA</span> · v' + G.version + '</div>';
     html += '<div>Echoes of the First Age</div>';
     html += '<div style="margin-top:8px;">Progress saves automatically every 30 seconds.</div>';
     html += '<div>Theme and font preferences are saved separately.</div>';
@@ -934,8 +967,212 @@ var RENDER = {
       var have  = G.res[k] || 0;
       var need  = costObj[k];
       var cls   = have >= need ? 'text-dim' : 'text-red';
-      return '<span class="' + cls + '">' + fmt(need) + ' ' + k + '</span>';
+      return '<span class="' + cls + '">' + fmt(need) + ' ' + resName(k) + '</span>';
     }).join(' + ');
+  },
+
+  /* ── THE ARCHIVE PANEL ───────────────── */
+  /* A cutaway of the Archive that grows with every building and dissolves on Awakening. */
+  archivePanel: function(opts) {
+    opts = opts || {};
+    var a    = G.awakening;
+    var mode = opts.mode || (a ? a.mode : 'normal');
+    var b    = G.buildings;
+    var n    = b.manaConduit || 0;
+    var lit  = Math.min(n, 12);
+    if (mode === 'blaze' || mode === 'cool') lit = 12;
+    if (mode === 'dimming' && a && a.lit !== null) lit = Math.min(a.lit, 12);
+    if (mode === 'dark' || mode === 'ruin') lit = 0;
+    var rooms = !(mode === 'dark' || mode === 'ruin');
+    var W = 46;
+
+    /* {braces} mark dim text and vanish on render — pad by visible width */
+    function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
+    function vlen(s) { return s.replace(/[{}]/g, '').length; }
+    function padR(s, w) { return s + rep(' ', w - vlen(s)); }
+    function padC(s, w) { var l = Math.floor((w - vlen(s)) / 2); return rep(' ', l) + s + rep(' ', w - vlen(s) - l); }
+    function row(inner) { return '║' + padR(inner, W) + '║'; }
+
+    var sock = '';
+    for (var i = 0; i < 12; i++) sock += (i < lit ? '~' : '·') + ' ';
+    var label = mode === 'ruin' ? 'sockets, dark' : (n > 12 ? 'conduits ×' + n : (n > 0 ? 'conduits' : 'conduit sockets'));
+    var lines = [];
+    lines.push(' ' + sock + ' {' + label + '}');
+    lines.push('╔' + rep('═', W) + '╗');
+    lines.push(row(padC(mode === 'ruin' ? '{— main hall, silted —}' : '{— main hall —}', W)));
+
+    function box(built, name) {
+      if (built && rooms) return ['┌────────┐', '│' + padC(name, 8) + '│', '└────────┘'];
+      return ['          ', padC('{· · · ·}', 10), '          '];
+    }
+    var bench = box(b.runicWorkbench, 'BENCH');
+    var scout = box(b.scoutPost, 'SCOUT');
+    var beacon = b.resonanceBeacon && rooms;
+    var mid = [beacon ? '[ ★ ]' : '[ ⊙ ]', beacon ? 'beacon' : 'relic', '     '];
+    for (var r = 0; r < 3; r++) {
+      lines.push(row('  ' + bench[r] + rep(' ', 8) + padC(mid[r], 5) + rep(' ', 9) + scout[r] + '  '));
+    }
+    var figures = '';
+    if (rooms && G.prestige.count >= 2) figures += '[≋] ';
+    if (rooms && G.prestige.count >= 3) figures += '†  ';
+    lines.push(row(rep(' ', W - figures.length - 2) + figures));
+    lines.push('╠' + rep('═', W) + '╣');
+
+    function item(built, name, count) {
+      if (!built || !rooms) return '{' + name + '} ·';
+      return name + (count > 1 ? ' ×' + count : ' ✓');
+    }
+    var lower = '  ' + [
+      item(b.scrapDepot, 'depot', b.scrapDepot),
+      item(b.ancientWorkshop, 'workshop', 1),
+      item(b.memoryTerminal, 'terminal', b.memoryTerminal),
+      item(b.golemForge, 'forge', 1)
+    ].join('   ');
+    lines.push(row(lower));
+    lines.push('╚' + rep('═', W) + '╝');
+    var taps = Math.min(b.leyTap || 0, 20);
+    var ley = '';
+    for (var t = 0; t < 20; t++) ley += (t < taps && rooms ? '◈' : '≋') + ' ';
+    lines.push('   ' + ley + ' {ley lines}');
+
+    var cLit   = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : 'pnl-lit');
+    var cFrame = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : (mode === 'ruin' ? 'pnl-ruin' : 'pnl-frame'));
+    var cRoom  = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : 'pnl-room');
+    function sp(cls, s) { return '<span class="' + cls + '">' + s + '</span>'; }
+    function colour(s) {
+      return s
+        .replace(/\{([^}]*)\}/g, function(m, inner) { return sp('pnl-dim', inner); })
+        .replace(/[╔╗╚╝║═╠╣]/g, function(m) { return sp(cFrame, m); })
+        .replace(/[┌┐└┘│─]/g, function(m) { return sp(cRoom, m); })
+        .replace(/~/g, sp(cLit, '~'))
+        .replace(/·/g, sp('pnl-dim', '·'))
+        .replace(/⊙/g, sp('pnl-gold', '⊙'))
+        .replace(/★/g, sp('pnl-res', '★'))
+        .replace(/◈/g, sp(cLit, '◈'))
+        .replace(/≋/g, sp('pnl-dim', '≋'))
+        .replace(/†/g, sp('pnl-tech', '†'))
+        .replace(/✓/g, sp(cRoom, '✓'));
+    }
+    return '<pre class="archive-panel' + (mode === 'ruin' ? ' panel-ruin' : '') + '">' + lines.map(colour).join('\n') + '</pre>';
+  },
+
+  /* ── WORLD MAP (fog of war) ──────────── */
+  worldMap: function() {
+    var vis = G.explore.visited || [];
+    var IW = 42;
+    function rep(ch, k) { return new Array(Math.max(0, k) + 1).join(ch); }
+    function padR(s, w) { return s + rep(' ', w - s.length); }
+    function padC(s, w) { var l = Math.floor((w - s.length) / 2); return rep(' ', l) + s + rep(' ', w - s.length - l); }
+    function row(inner) { return '  ║' + padR(inner, IW) + '║'; }
+    function state(id) {
+      if (vis.indexOf(id) !== -1) return 'v';
+      if (DATA.zones[id].unlockCondition(G)) return 'u';
+      return 'l';
+    }
+    var visitedLabels = [];
+    function lab(id) {
+      var s = state(id);
+      if (s === 'v') { visitedLabels.push(DATA.zones[id].mapLabel); return padC(DATA.zones[id].mapLabel, 20); }
+      if (s === 'u') return padC('? ? ? ? ?', 20);
+      return padC('▓▓▓▓▓▓▓▓▓▓▓▓', 20);
+    }
+    function side(id, k) { return state(id) === 'l' ? '   ' : DATA.mapSides[id][k]; }
+    function box(id, connectorBelow) {
+      return [
+        row('  ' + side(id, 0) + '  ╔════════════════════╗  ' + side(id, 2) + '        '),
+        row('  ' + side(id, 1) + '  ║' + lab(id) + '║  ' + side(id, 3) + '        '),
+        row('  ' + side(id, 1) + '  ╚══════════' + (connectorBelow ? '┬' : '═') + '═════════╝  ' + side(id, 3) + '        ')
+      ].join('\n');
+    }
+    function connector(id) { return row('  ' + side(id, 0) + '             │            ' + side(id, 2) + '        '); }
+    var cathedral = state('cathedral_of_first_light');
+    var cathRow = cathedral === 'l'
+      ? row(rep(' ', 18) + '│')
+      : row('  † †' + rep(' ', 13) + (cathedral === 'v' ? '├────[† CATHEDRAL †]' : '├────[ ? ? ? ? ? ]'));
+    if (cathedral === 'v') visitedLabels.push('† CATHEDRAL †');
+
+    var lines = [
+      '  ╔' + rep('═', IW) + '╗',
+      row('  ≋ ≋ ≋  A E T H O R I A  ≋ ≋ ≋'),
+      row('  ── what the Scout Post has read ──'),
+      '  ╠' + rep('═', IW) + '╣',
+      row(''),
+      box('lattice_core', true),
+      connector('lattice_core'),
+      box('deep_vault', true),
+      connector('deep_vault'),
+      box('shattered_spire', true),
+      cathRow,
+      box('sunken_district', true),
+      row(rep(' ', 18) + '├──────[★ THE ARCHIVE]'),
+      box('overgrown_road', true),
+      row(rep(' ', 18) + '│'),
+      box('ruined_outpost', false),
+      row(''),
+      '  ╚' + rep('═', IW) + '╝'
+    ];
+    var out = lines.join('\n');
+    out = out.replace(/\? \? \? \? \?/g, '<span class="text-dim" style="opacity:.8">? ? ? ? ?</span>')
+             .replace(/▓{12}/g, '<span style="opacity:.35">▓▓▓▓▓▓▓▓▓▓▓▓</span>')
+             .replace(/★ THE ARCHIVE/g, '<span class="text-gold">★ THE ARCHIVE</span>');
+    visitedLabels.forEach(function(l) {
+      out = out.split(l).join('<span class="text-bright">' + l + '</span>');
+    });
+    return out;
+  },
+
+  /* ── THE AWAKENING ───────────────────── */
+  screenAwakening: function() {
+    var a = G.awakening;
+    var lvl = DATA.prestigeLevels[a.level - 1];
+    var html = '<div class="section awakening-screen">';
+    html += '<div class="section-header">── THE AWAKENING — ' + lvl.name.toUpperCase() + ' ─────────────</div>';
+    html += RENDER.archivePanel({});
+    html += '<div class="awakening-lines">';
+    a.lines.forEach(function(l) { html += '<div class="awakening-line">' + escapeHtml(l) + '</div>'; });
+    html += '</div>';
+    if (a.level < 6 && (Date.now() - a.start) / 1000 >= 4) {
+      html += '<div style="margin-top:14px;"><button class="btn btn-small" style="opacity:.45;" onclick="Prestige.skip()">[ skip ]</button></div>';
+    }
+    html += '</div>';
+    return html;
+  },
+
+  /* ── THE ENDING ──────────────────────── */
+  screenEnding: function() {
+    var e = G.ending;
+    var html = '<div class="section ending-screen">';
+    html += '<div class="section-header">── THE MEMORY TERMINAL ─────────────────────────</div>';
+    if (e.phase === 'scroll') {
+      var glyphs = '▓░▒◈≋║═╬┼·~*#@0123456789';
+      var pool = DATA.lore.map(function(l) { return loreText(l.text).replace(/\s+/g, ' '); });
+      var out = '';
+      for (var i = 0; i < 16; i++) {
+        var src = pool[Math.floor(Math.random() * pool.length)];
+        var start = Math.floor(Math.random() * Math.max(1, src.length - 60));
+        var frag = src.substr(start, 30 + Math.floor(Math.random() * 30));
+        var noise = '';
+        for (var g = 0; g < 8 + Math.floor(Math.random() * 12); g++) noise += glyphs[Math.floor(Math.random() * glyphs.length)];
+        out += (Math.random() < 0.5 ? noise + ' ' + frag : frag + ' ' + noise) + '\n';
+      }
+      html += '<pre class="terminal-scroll">' + escapeHtml(out) + '</pre>';
+      html += '<div class="text-dim" style="font-size:0.82rem;font-style:italic;margin-top:8px;">Pages. Books. Everything it has been holding for a thousand years, faster than you can read.</div>';
+    } else {
+      html += '<div class="ending-lines">';
+      e.lines.forEach(function(l) {
+        if (l.who === 'veritas') html += '<div class="end-veritas">&gt; ' + escapeHtml(l.text) + '</div>';
+        else if (l.who === 'hero') html += '<div class="end-hero">' + escapeHtml(G.heroName) + ': ' + escapeHtml(l.text) + '</div>';
+        else if (l.who === 'pause') html += '<div class="end-pause">. . . ' + escapeHtml(l.text) + '</div>';
+        else html += '<div class="end-note">' + escapeHtml(l.text) + '</div>';
+      });
+      if (e.phase !== 'done') html += '<div class="end-veritas" style="opacity:.5;">▌</div>';
+      html += '</div>';
+      if (e.phase === 'done') {
+        html += '<div style="margin-top:18px;"><button class="btn btn-prestige" onclick="Ending.finalize()">[ THE MORNING ]</button></div>';
+      }
+    }
+    html += '</div>';
+    return html;
   },
 
   /* Returns a human-readable "time until affordable" string, or '' if unknown. */

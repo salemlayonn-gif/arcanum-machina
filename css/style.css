@@ -969,6 +969,67 @@ html[data-theme="parchment"] ::-webkit-scrollbar-thumb { background: var(--dim);
 .relic-flavor { color: var(--dim); font-size: 0.79rem; font-style: italic; margin-bottom: 6px; }
 .relic-bonus { color: var(--gold); font-size: 0.86rem; }
 
+/* ── THE ARCHIVE PANEL ─────────────────── */
+.archive-panel {
+  white-space: pre;
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.32;
+  margin: 0 0 14px;
+  color: var(--text);
+  overflow-x: auto;
+}
+.archive-panel.panel-ruin { color: var(--dim); }
+.pnl-dim   { color: var(--dim); opacity: 0.75; }
+.pnl-lit   { color: var(--mana); text-shadow: 0 0 6px var(--mana); }
+.pnl-gold  { color: var(--gold); text-shadow: 0 0 9px rgba(251,191,36,0.55); }
+.pnl-cool  { color: var(--ether); text-shadow: 0 0 9px var(--ether); }
+.pnl-frame { color: var(--border); }
+.pnl-ruin  { color: var(--border); opacity: 0.5; }
+.pnl-room  { color: var(--tech); }
+.pnl-res   { color: var(--resonance); text-shadow: 0 0 8px var(--resonance); }
+.pnl-tech  { color: var(--tech); }
+
+/* ── AWAKENING / ENDING ────────────────── */
+.awakening-lines { margin-top: 14px; }
+.awakening-line {
+  color: var(--arcane);
+  font-style: italic;
+  line-height: 1.9;
+  font-size: 0.93rem;
+  animation: fadeIn 1.4s ease;
+}
+.terminal-scroll {
+  white-space: pre;
+  color: var(--memory);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  opacity: 0.8;
+  height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  padding: 8px;
+  background: var(--bg2);
+}
+.end-veritas { color: var(--gold); line-height: 1.9; margin-bottom: 8px; animation: fadeIn 1.2s ease; }
+.end-hero    { color: var(--text); line-height: 1.9; margin-bottom: 8px; animation: fadeIn 1.2s ease; }
+.end-pause   { color: var(--dim); font-style: italic; text-align: center; margin: 12px 0; animation: fadeIn 2s ease; }
+.end-note    { color: var(--arcane); font-style: italic; line-height: 1.9; margin-bottom: 6px; animation: fadeIn 1.4s ease; }
+
+/* ── SHARD DECODING ────────────────────── */
+.decode-tag     { color: var(--memory); font-size: 0.72rem; letter-spacing: 1px; }
+.decode-line    { color: var(--memory); font-size: 0.86rem; margin-top: 10px; }
+.decode-corrupt { color: var(--dim); opacity: 0.6; font-size: 0.86rem; margin-top: 4px; }
+.lore-decoding  { border-style: dashed; }
+
+/* ── PROLOGUE ──────────────────────────── */
+.prologue-art  { display: block; margin: 6px auto 18px; font-size: 0.86rem; text-align: left; }
+.prologue-fade { animation: fadeIn 1.4s ease; }
+.intro-body em { color: var(--arcane); font-style: italic; }
+
+/* ── COMBAT BACKDROP ───────────────────── */
+.combat-backdrop { color: var(--mana); opacity: 0.55; margin-top: -8px; }
+
 /* ── RESPONSIVE ────────────────────────── */
 @media (max-width: 600px) {
   #game-container { padding: 12px; }

@@ -437,13 +437,28 @@ var Music = (function() {
 
     toggle: function() { Music.playing ? Music.stop() : Music.play(); },
 
-    setSong: function(idx) {
+    setSong: function(idx, transient) {
       if (idx < 0 || idx >= SONGS.length || idx === _currentSong) return;
       _currentSong = idx;
       Music.currentSong = idx;
-      localStorage.setItem('am_music_song', idx);
+      if (!transient) localStorage.setItem('am_music_song', idx);
       if (Music.playing) { Music.stop(); Music.play(); }
       if (typeof RENDER !== 'undefined') RENDER.markDirty();
+    },
+
+    /* The Sunken District has its own music while you are down there */
+    _autoPrev: null,
+    autoSwitch: function(idx) {
+      if (!Music.playing || Music._autoPrev !== null || _currentSong === idx) return;
+      Music._autoPrev = _currentSong;
+      Music.setSong(idx, true);
+    },
+    autoRestore: function() {
+      if (Music._autoPrev === null) return;
+      var prev = Music._autoPrev;
+      Music._autoPrev = null;
+      if (Music.playing) Music.setSong(prev, true);
+      else { _currentSong = prev; Music.currentSong = prev; }
     },
 
     play: function() {

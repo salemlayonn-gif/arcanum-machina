@@ -5,12 +5,13 @@
 var Exploration = {
 
   startExplore: function(zoneId) {
+    if (G.awakening || G.ending) return;
     if (G.explore.active) {
-      addLog('Already exploring — wait for the scout to return.', '');
+      addLog('You are already out. One road at a time.', '');
       return;
     }
     if (G.combat.active) {
-      addLog('Cannot scout while in combat.', '');
+      addLog('Not now.', '');
       return;
     }
     var zone = DATA.zones[zoneId];
@@ -22,7 +23,10 @@ var Exploration = {
     G.explore.startTime = Date.now();
     G.explore.endTime   = Date.now() + duration;
 
-    addLog('Scouting: ' + zone.name + '...', '');
+    if (zoneId === 'sunken_district' && typeof Music !== 'undefined') Music.autoSwitch(1);
+
+    var visited = (G.explore.visited || []).indexOf(zoneId) !== -1;
+    addLog(visited ? 'You take the road to ' + zone.name + '.' : 'You take the road toward something the Scout Post cannot name yet.', '');
     RENDER.markDirty();
   },
 
@@ -30,7 +34,8 @@ var Exploration = {
     if (!G.explore.active) return;
     G.explore.active = false;
     if (G.buffs) G.buffs.exploreSpeedBonus = 0;
-    addLog('Exploration cancelled.', '');
+    if (typeof Music !== 'undefined') Music.autoRestore();
+    addLog('You turn back.', '');
     RENDER.markDirty();
   },
 
@@ -70,7 +75,7 @@ var Crafting = {
     if (!recipe) return;
     if (!recipe.unlockCondition(G)) return;
     if (!canAfford(recipe.cost)) {
-      addLog('Not enough resources to craft ' + recipe.name + '.', '');
+      addLog('Not enough for ' + recipe.name + '.', '');
       return;
     }
 
@@ -78,14 +83,14 @@ var Crafting = {
       var res = recipe.output.resource;
       var cap = G.resCap[res];
       if (cap !== undefined && cap !== Infinity && (G.res[res] || 0) >= cap) {
-        addLog(recipe.name + ' at capacity. Make room first.', '');
+        addLog('Nowhere to keep another ' + recipe.name + '. The capacitors are full.', '');
         return;
       }
     }
 
     var slot = Crafting.getFreeSlot();
     if (slot === null) {
-      addLog('No free crafting slot.', '');
+      addLog('Both bench slots are busy.', '');
       return;
     }
 
@@ -104,32 +109,28 @@ var Crafting = {
     }
 
     spendResources(recipe.cost);
-    var craftTime = recipe.time;
-    /* Prestige 4: recipes using Memory Shards decode 2x faster */
-    if (G.prestige.count >= 4 && recipe.cost.memoryShard) {
-      craftTime = Math.floor(craftTime / 2);
-    }
+    var craftTime = getCraftTime(recipe);
     G.crafting[slot] = {
       recipeId:  recipeId,
       startTime: Date.now(),
       endTime:   Date.now() + craftTime
     };
-    addLog('Started crafting: ' + recipe.name + '.', '');
+    addLog('You lay the components on the bench. The channels light the first step: ' + recipe.name + '.', '');
     RENDER.markDirty();
   },
 
   cancelCraft: function(slot) {
     var s = G.crafting[slot];
     if (!s) return;
-    // Refund half the cost
+    // Refund half the cost (rounded up, so a single shard is never lost)
     var recipe = DATA.recipes[s.recipeId];
     if (recipe) {
       for (var k in recipe.cost) {
-        resAdd(k, Math.floor(recipe.cost[k] / 2));
+        resAdd(k, Math.ceil(recipe.cost[k] / 2));
       }
     }
     G.crafting[slot] = null;
-    addLog('Crafting cancelled (50% refund).', '');
+    addLog('You clear the bench. Half the materials are still usable.', '');
     RENDER.markDirty();
   },
 
@@ -168,7 +169,6 @@ var Equipment = {
     G.inventory.splice(idx, 1);
 
     addLog('Equipped: ' + eq.name, 'log-loot');
-    showNotification('Equipped: ' + eq.name, 'notif-loot');
     RENDER.markDirty();
   },
 

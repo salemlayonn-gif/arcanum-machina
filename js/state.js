@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.0.0',
+  version: '1.1.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -19,7 +19,7 @@ var G = {
     resonance: 0
   },
 
-  /* Resource caps */
+  /* Resource caps — recomputed from buildings every tick (Engine.checkBuildingCapEffects) */
   resCap: {
     mana: 200,
     scrap: 30,
@@ -70,10 +70,11 @@ var G = {
     startTime: 0,
     endTime: 0,
     runsCompleted: 0,
-    visited: []    // zone IDs explored at least once
+    visited: [],   // zone IDs explored at least once
+    zoneRuns: {}   // zoneId -> completed runs
   },
 
-  /* Combat */
+  /* Combat (transient — not saved) */
   combat: {
     active: false,
     zoneId: null,
@@ -82,23 +83,25 @@ var G = {
     enemyHp: 0,
     enemyMaxHp: 0,
     log: [],
-    result: null,    // 'win' | 'lose' | null
+    result: null,    // 'win' | 'lose' | 'flee' | 'pass' | null
     lastTurnTime: 0,
     turnCount: 0,
     golemHp: 0,
     golemMaxHp: 30,
-    cooldownUntil: 0
+    cooldownUntil: 0,
+    modifier: null,  // one-shot narrative modifier, e.g. 'tired'
+    script: null     // scripted non-combat encounter { lines, idx, resolve }
   },
 
   /* Prestige */
   prestige: {
     count: 0,
-    resonance: 0,         // current resonance (persists)
+    resonance: 0,
     totalEarned: 0,
     multiplier: 1.0
   },
 
-  /* Statistics */
+  /* Statistics (lifetime — kept through Awakenings) */
   stats: {
     totalMana: 0,
     enemiesDefeated: 0,
@@ -108,14 +111,20 @@ var G = {
     prestigeCount: 0
   },
 
-  /* Unlocked lore IDs */
+  /* Lore */
   loreUnlocked: [],
-  loreNew: [],        // IDs shown as "NEW"
-  annotationsNew: [], // unread annotations
+  loreNew: [],
+  annotationsNew: [],
+
+  /* Shard decoding: loreId -> { done, progress, complete } */
+  decoding: {},
+
+  /* One-shot narrative events already seen (kept through Awakenings) */
+  seeds: {},
 
   /* UI state */
   ui: {
-    screen: 'archive',    // archive | map | lore | hero | prestige
+    screen: 'archive',
     lastScreen: 'archive',
     hideMaxedBuildings: false
   },
@@ -137,7 +146,8 @@ var G = {
     heroVisible: false,
     prestigeVisible: false,
     codexVisible: false,
-    relicsVisible: false
+    relicsVisible: false,
+    ended: false
   },
 
   /* Temporary buffs */
@@ -148,18 +158,16 @@ var G = {
     enemyStunned: false
   },
 
-  /* VERITAS hint tracking */
   veritasHint: { lastTime: 0, count: 0 },
-
-  /* VERITAS partial transmission tracking (prestige 5+) */
   veritasTransmission: { lastTime: 0, count: 0 },
 
-  /* Relics found */
   relics: [],
   relicsNew: [],
+  annotations: [],
 
-  /* Annotations unlocked */
-  annotations: []
+  /* Transient scripted sequences (not saved) */
+  awakening: null,
+  ending: null
 };
 
 /* ── STATE HELPERS ─────────────────────── */
@@ -190,6 +198,9 @@ function spendResources(costObj) {
 function getBuildingCount(id) {
   return G.buildings[id] || 0;
 }
+
+var RES_NAMES = { mana: 'mana', scrap: 'scrap', arcaneCore: 'Cores', memoryShard: 'Shards', etherCell: 'Ether', resonance: 'Resonance' };
+function resName(id) { return RES_NAMES[id] || id; }
 
 function addLog(msg, cls) {
   G.gameLog.unshift({ msg: msg, cls: cls || '' });
@@ -250,14 +261,15 @@ function getHeroRegen() {
   return 0;
 }
 
+function getHeroHp() {
+  return G.combat.active ? G.combat.heroHp : G.hero.hp;
+}
+
 function getManaPerSec() {
   var base = 0.2;
-  var n = getBuildingCount('manaConduit');
-  base += n * 0.3;
-  var l = getBuildingCount('leyTap');
-  base += l * 1.5;
-  var w = getBuildingCount('ancientWorkshop');
-  base += w * 0.5;
+  base += getBuildingCount('manaConduit') * 0.3;
+  base += getBuildingCount('leyTap') * 1.5;
+  base += getBuildingCount('ancientWorkshop') * 0.5;
   var weapon = G.hero.equipment.weapon;
   if (weapon && DATA.equipment[weapon]) base += (DATA.equipment[weapon].stats.manaPerSec || 0);
   var acc = G.hero.equipment.accessory;
@@ -268,19 +280,38 @@ function getManaPerSec() {
 }
 
 function getScrapPerSec() {
-  var n = getBuildingCount('scrapDepot');
-  var base = n * 0.06;
+  var base = getBuildingCount('scrapDepot') * 0.06;
   base += getRelicBonus('scrapPerSec');
   base *= G.prestige.multiplier * (1 + getRelicBonus('prestigeMultBonus'));
   return base;
 }
 
 function getMemoryPerSec() {
-  var n = getBuildingCount('memoryTerminal');
-  var base = n * 0.02;
+  var base = getBuildingCount('memoryTerminal') * 0.02;
   // Ancient Workshop passively recovers trace memory data from the ruins
   if (getBuildingCount('ancientWorkshop') >= 1) base += 0.002;
   return base;
+}
+
+/* ── AWAKENING SCALING ─────────────────── */
+/* Each cycle the hands know more: costs and times shrink (the book: 4 hours → 10 minutes). */
+function prestigeCostMult() { return Math.pow(0.85, G.prestige.count); }
+function prestigeTimeMult() { return Math.pow(0.80, G.prestige.count); }
+
+function getBuildingCost(id, count) {
+  var bld  = DATA.buildings[id];
+  var base = bld.baseCost(count);
+  var mult = prestigeCostMult();
+  if (id === 'resonanceBeacon' && G.prestige.count >= 5) mult *= 0.5;
+  var out = {};
+  for (var k in base) out[k] = Math.max(1, Math.floor(base[k] * mult));
+  return out;
+}
+
+function getCraftTime(recipe) {
+  var t = recipe.time * prestigeTimeMult();
+  if (G.prestige.count >= 4 && recipe.cost.memoryShard) t = t / 2;
+  return Math.max(3000, Math.floor(t));
 }
 
 function getExploreTime(zoneId) {
@@ -297,6 +328,7 @@ function getExploreTime(zoneId) {
   }
   speedBonus += getRelicBonus('exploreSpeed') + getAnnotationBonus('exploreSpeed');
   if (speedBonus > 0) t = t * (1 - Math.min(speedBonus, 0.9));
+  t *= prestigeTimeMult();
   return Math.max(t, 2000);
 }
 
@@ -309,6 +341,31 @@ function computeResonanceGain() {
   return Math.max(1, base);
 }
 
+/* ── SHARD DECODING ────────────────────── */
+/* The book: "one layer per working day." Shard records arrive in segments, read by the Terminal. */
+function loreSegments(entry) {
+  return entry.text.split(/\n[ \t]*\n/);
+}
+
+function decodeSegmentSeconds() {
+  var terminals = getBuildingCount('memoryTerminal');
+  var t = 75 / (1 + 0.35 * Math.max(0, terminals - 1));
+  if (G.prestige.count >= 4) t /= 2;
+  return t;
+}
+
+function isLoreDecoded(id) {
+  var d = G.decoding[id];
+  return !d || !!d.complete;
+}
+
+function getLoreEntry(id) {
+  for (var i = 0; i < DATA.lore.length; i++) if (DATA.lore[i].id === id) return DATA.lore[i];
+  return null;
+}
+
+/* ── HERO ──────────────────────────────── */
+
 function heroLevelUp() {
   G.hero.level++;
   G.hero.expToNext = Math.floor(50 * Math.pow(1.4, G.hero.level - 1));
@@ -317,8 +374,7 @@ function heroLevelUp() {
   G.hero.hp = getHeroMaxHp();
   G.hero.baseAttack += 2;
   G.hero.baseDefense += 1;
-  addLog('Level up! Now level ' + G.hero.level + '.', 'log-important');
-  showNotification('Level ' + G.hero.level + '!', 'notif-level');
+  addLog('You are steadier with the staff. (Level ' + G.hero.level + ')', 'log-important');
 }
 
 function grantExp(amount) {
@@ -329,37 +385,42 @@ function grantExp(amount) {
   }
 }
 
+function heroNameSafe(name) {
+  return String(name || '').replace(/<[^>]*>/g, '').replace(/[<>&"'`]/g, '').trim().slice(0, 20);
+}
+
 /* ── EXPORT / IMPORT ───────────────────── */
 
 function exportSave() {
   try {
+    saveGame();
     var raw = localStorage.getItem('arcanum_machina_save');
-    if (!raw) { alert('No save data found.'); return; }
+    if (!raw) { showNotification('No save data found.', ''); return; }
     var encoded = btoa(unescape(encodeURIComponent(raw)));
     var el = document.getElementById('save-export-box');
     if (el) {
       el.value = encoded;
       el.select();
-      document.execCommand('copy');
+      try { document.execCommand('copy'); } catch(e) {}
       el.blur();
-      showNotification('Save copied to clipboard!', 'notif-loot');
+      showNotification('Save code copied.', 'notif-loot');
     }
   } catch(e) {
-    alert('Export failed: ' + e);
+    showNotification('Export failed.', 'notif-lore');
   }
 }
 
 function importSave() {
   try {
     var el = document.getElementById('save-import-box');
-    if (!el || !el.value.trim()) { alert('Paste your save code first.'); return; }
+    if (!el || !el.value.trim()) { showNotification('Paste your save code first.', ''); return; }
     var decoded = decodeURIComponent(escape(atob(el.value.trim())));
     var data = JSON.parse(decoded);
-    if (!data.version) { alert('Invalid save data.'); return; }
+    if (!data.version) { showNotification('Invalid save data.', 'notif-lore'); return; }
     localStorage.setItem('arcanum_machina_save', decoded);
     location.reload();
   } catch(e) {
-    alert('Import failed — make sure you pasted the full save code.');
+    showNotification('Import failed — paste the full save code.', 'notif-lore');
   }
 }
 
@@ -388,6 +449,9 @@ function saveGame() {
       relics: G.relics,
       annotations: G.annotations,
       exploreVisited: G.explore.visited || [],
+      zoneRuns: G.explore.zoneRuns || {},
+      decoding: G.decoding,
+      seeds: G.seeds,
       veritasHint: G.veritasHint,
       veritasTransmission: G.veritasTransmission,
       savedAt: Date.now()
@@ -405,7 +469,7 @@ function loadGame() {
     if (!raw) return false;
     var data = JSON.parse(raw);
 
-    G.heroName  = data.heroName || '';
+    G.heroName  = heroNameSafe(data.heroName);
     G.playTime  = data.playTime || 0;
     G.res       = Object.assign({mana:0,scrap:0,arcaneCore:0,memoryShard:0,etherCell:0,resonance:0}, data.res);
     G.resCap    = Object.assign({mana:200,scrap:30,arcaneCore:20,memoryShard:15,etherCell:20,resonance:Infinity}, data.resCap);
@@ -416,14 +480,18 @@ function loadGame() {
     G.stats     = Object.assign({totalMana:0,enemiesDefeated:0,exploreRuns:0,coresCrafted:0,itemsCrafted:0,prestigeCount:0}, data.stats);
     G.loreUnlocked = data.loreUnlocked || [];
     G.prestige  = Object.assign({count:0,resonance:0,totalEarned:0,multiplier:1.0}, data.prestige);
-    G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false}, data.flags);
-    G.buffs = Object.assign({ attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false }, {});
+    G.flags     = Object.assign({introComplete:false,craftingVisible:false,mapVisible:false,loreVisible:false,heroVisible:false,prestigeVisible:false,codexVisible:false,relicsVisible:false,ended:false}, data.flags);
+    G.buffs     = { attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false };
     G.veritasHint = Object.assign({ lastTime: 0, count: 0 }, data.veritasHint || {});
     G.veritasTransmission = Object.assign({ lastTime: 0, count: 0 }, data.veritasTransmission || {});
     G.relics      = data.relics      || [];
     G.relicsNew   = [];
     G.annotations = data.annotations || [];
-    G.explore.visited = data.exploreVisited || [];
+    G.explore.visited  = data.exploreVisited || [];
+    G.explore.zoneRuns = data.zoneRuns || {};
+    G.decoding = data.decoding || {};
+    G.seeds    = data.seeds || {};
+    if (G.loreUnlocked.length && !G.flags.loreVisible) G.flags.loreVisible = true;
 
     /* Offline progress */
     if (data.savedAt) {
@@ -433,7 +501,10 @@ function loadGame() {
         var scrapGain = getScrapPerSec() * elapsed * 0.5;
         resAdd('mana', manaGain);
         resAdd('scrap', scrapGain);
-        addLog('Offline for ' + formatTime(elapsed) + '. Gained ' + fmt(manaGain) + ' mana, ' + fmt(scrapGain) + ' scrap.', 'log-important');
+        var decoded = (typeof Engine !== 'undefined') ? Engine.advanceDecoding(elapsed, true) : 0;
+        var msg = 'You were away ' + formatTime(elapsed) + '. The lines kept flowing: +' + fmt(manaGain) + ' mana, +' + fmt(scrapGain) + ' scrap.';
+        if (decoded > 0) msg += ' The Terminal decoded ' + decoded + ' segment' + (decoded === 1 ? '' : 's') + ' while you were gone.';
+        addLog(msg, 'log-important');
       }
     }
 
@@ -444,40 +515,54 @@ function loadGame() {
   }
 }
 
-function resetForPrestige() {
-  var keep = {
-    heroName: G.heroName,
-    prestige: G.prestige,
-    stats: G.stats,
-    loreUnlocked: G.loreUnlocked,
-    relics: G.relics,
-    annotations: G.annotations,
-    hero: {
-      level: 1, exp: 0, expToNext: 50,
-      maxHp: 50, hp: 50, baseAttack: 5, baseDefense: 2,
-      equipment: { weapon: null, armor: null, accessory: null }
-    },
-    inventory: [],
-    flags: { introComplete: true, craftingVisible: false, mapVisible: false, loreVisible: false, heroVisible: false, prestigeVisible: false, codexVisible: true, relicsVisible: G.relics.length > 0 }
-  };
+/* keepDeep: after the sixth Awakening the deep structures remain lit (Appendix E). */
+function resetForPrestige(keepDeep) {
+  var keptBuildings = {};
+  if (keepDeep) {
+    keptBuildings.manaConduit = Math.min(G.buildings.manaConduit || 0, 5);
+    ['runicWorkbench', 'scoutPost', 'ancientWorkshop', 'memoryTerminal'].forEach(function(id) {
+      if (G.buildings[id]) keptBuildings[id] = G.buildings[id];
+    });
+  } else {
+    // The hands know the first sockets: one conduit already lit per completed Awakening
+    var pre = Math.min(G.prestige.count, 5);
+    if (pre > 0) keptBuildings.manaConduit = pre;
+  }
+  for (var k in keptBuildings) if (!keptBuildings[k]) delete keptBuildings[k];
 
   G.res       = { mana: 0, scrap: 0, arcaneCore: 0, memoryShard: 0, etherCell: 0, resonance: G.prestige.resonance };
   G.resCap    = { mana: 200, scrap: 30, arcaneCore: 20, memoryShard: 15, etherCell: 20, resonance: Infinity };
-  G.buildings = {};
-  G.hero      = keep.hero;
-  G.inventory = keep.inventory;
+  G.buildings = keptBuildings;
+  G.hero      = {
+    level: 1, exp: 0, expToNext: 50,
+    maxHp: 50, hp: 50, baseAttack: 5, baseDefense: 2,
+    equipment: { weapon: null, armor: null, accessory: null }
+  };
+  G.inventory = [];
   G.crafting  = { slot0: null, slot1: null };
-  G.explore   = { active: false, zoneId: null, startTime: 0, endTime: 0, runsCompleted: 0, visited: [] };
-  G.combat    = { active: false, zoneId: null, enemyId: null, heroHp: 0, enemyHp: 0, enemyMaxHp: 0, log: [], result: null, lastTurnTime: 0, turnCount: 0, golemHp: 0, golemMaxHp: 30, cooldownUntil: 0 };
-  G.flags     = keep.flags;
+  G.explore   = {
+    active: false, zoneId: null, startTime: 0, endTime: 0, runsCompleted: 0,
+    visited:  keepDeep ? (G.explore.visited || []) : [],
+    zoneRuns: keepDeep ? (G.explore.zoneRuns || {}) : {}
+  };
+  G.combat    = { active: false, zoneId: null, enemyId: null, heroHp: 0, enemyHp: 0, enemyMaxHp: 0, log: [], result: null, lastTurnTime: 0, turnCount: 0, golemHp: 0, golemMaxHp: 30, cooldownUntil: 0, modifier: null, script: null };
+  G.flags     = {
+    introComplete: true,
+    craftingVisible: !!keptBuildings.runicWorkbench,
+    mapVisible: !!keptBuildings.scoutPost,
+    loreVisible: G.loreUnlocked.length > 0,
+    heroVisible: true,
+    prestigeVisible: false,
+    codexVisible: true,
+    relicsVisible: G.relics.length > 0,
+    ended: !!G.flags.ended
+  };
   G.gameLog   = [];
   G.ui.screen = 'archive';
   G.buffs = { attackBonus: 0, exploreSpeedBonus: 0, shieldActive: false, enemyStunned: false };
-  G.veritasHint = { lastTime: 0, count: 0 };
-  G.veritasTransmission = { lastTime: 0, count: 0 };
-  G.relics      = keep.relics;
+  G.veritasHint = { lastTime: G.playTime, count: 0 };
+  G.veritasTransmission = { lastTime: G.playTime, count: 0 };
   G.relicsNew   = [];
-  G.annotations = keep.annotations;
 }
 
 /* ── NUMBER FORMATTING ─────────────────── */

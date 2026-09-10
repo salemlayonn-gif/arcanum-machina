@@ -1,5 +1,50 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-10 (later) — v1.1.0: the IMPROVEMENTS.md pass
+
+Everything in `IMPROVEMENTS.md` implemented except the three items marked open there. Highlights:
+
+- **The Awakening is reachable.** Core/Shard/Ether caps now grow with the Ancient Workshop (+40 Cores),
+  Memory Terminals (+6 Shards each) and Golem Forge (+120 Cores, +40 Ether). Ley Taps give +300 mana cap
+  (was +200) and the Beacon costs 4,000 mana (was 5,000) — a greedy economy sim showed the old cap
+  topped out around 4,200, so the Beacon was unreachable even without the cap bug.
+- **Shards decode slowly** on the Memory Terminal, one segment at a time (~75 s each, faster with more
+  terminals, halved at prestige 4). Offline time decodes segments. Eight entries are `decode: true`.
+- **The Archive panel** (`RENDER.archivePanel`) — an ASCII cutaway that grows with buildings and dissolves
+  during the Awakening. **Fog-of-war map** (`RENDER.worldMap`). **Prologue** in four beats before the name.
+- **The Awakening is a ~35 s sequence** (`Prestige.timeline`, modes blaze → quiet → dimming → dark → ruin)
+  with a Web Audio chord and per-cycle lines. **The sixth is the ending** (`Ending`): Terminal scroll,
+  "Hello, {heroName}", the exchange, the 4.7 s pause, and the deep structures stay lit.
+- **Spiral:** every Awakening −15% costs, −20% craft/scout times, N conduits pre-lit. Bonus text is honest.
+- **Nothing dies.** Wolves withdraw, bandits run, machines halt. **Vault Automatons don't fight** — a
+  scripted handshake. `Broadcast Authorization` spell vs Wraiths (needs the Architect's Seal).
+- **Seeded VERITAS moments** in cycle one (wolf that leaves, tired bandit, shard in the runoff) so the
+  prestige-4 message lands. **New lore:** District testimonies ×4, Unit 7 patrol log, three letters,
+  the Spire cut, the Vault descent, the eastern common room. Lore order fixed (the Silence needs the Vault).
+- Voice pass on UI strings; far fewer toasts. `alert()` gone. Hero name sanitised. Keyboard guard.
+- `test/harness.js` — Node regression harness for the systems you can't reach by playing. `node test/harness.js`.
+
+Open (see IMPROVEMENTS.md): Care Golem "move slowly" approach, Sentry all-clear terminal, Scholar earlier.
+
+---
+
+## Session 2026-09-10 — Moved to local Claude project + GitHub workflow
+
+- Repo cloned from `salemlayonn-gif/arcanum-machina` into
+  `Claude-Sync\claude-projects\arcanum-machina-game`, so it can be developed here like the
+  rest of Robert's projects.
+- Git identity and push credentials pinned locally (this folder only) to the
+  `salemlayonn-gif` personal account — never the `robertpotau` teacher account. See
+  [`CLAUDE.md`](CLAUDE.md) for the setup and the workflow rule (code + test locally first,
+  push only on explicit confirmation).
+- No gameplay changes this session.
+- Full review of the game against the book written to [`IMPROVEMENTS.md`](IMPROVEMENTS.md):
+  **game-breaking bug found** — Core/Shard/Ether caps never grow, so the Resonance Beacon and Golem
+  Forge can never be built and every Awakening is unreachable. Plus 13 smaller bugs and 14 pacing /
+  immersion proposals. Nothing implemented yet; Robert to pick.
+
+---
+
 ## Session 2026-04-13 — Autonomous improvements
 
 ### Changes made this session

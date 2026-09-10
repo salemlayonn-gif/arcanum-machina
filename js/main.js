@@ -4,27 +4,52 @@
 
 (function() {
 
-  /* ── INTRO SEQUENCE ────────────────────── */
+  var prologueBeat = -1;
+
+  /* ── PROLOGUE: three days before the relic ── */
   function showIntro() {
     var el = document.getElementById('intro-screen');
     if (!el) return;
+    prologueBeat = -1;
+    renderBeat();
+  }
 
-    el.innerHTML =
-      '<pre class="intro-title">' + DATA.ASCII.title + '</pre>' +
+  function renderBeat() {
+    var el = document.getElementById('intro-screen');
+    var beats = DATA.prologue;
+    var html = '<pre class="intro-title">' + DATA.ASCII.title + '</pre>' +
       '<div class="intro-subtitle">── E C H O E S &nbsp; O F &nbsp; T H E &nbsp; F I R S T &nbsp; A G E ──</div>' +
-      '<div class="intro-divider">════════════════════════════════════════════════</div>' +
-      '<div class="intro-body">' +
+      '<div class="intro-divider">════════════════════════════════════════════════</div>';
+
+    if (prologueBeat < 0) {
+      html += '<div class="intro-body prologue-fade">' +
+        '<p class="text-dim" style="letter-spacing:2px;font-size:0.8rem;">FIELD NOTES — BEFORE DAY ONE</p>' +
+        '<p>The valley sits where three ley lines meet.</p>' +
+        '<p>It is on no official chart.</p>' +
+        '</div>' +
+        '<div class="intro-prompt prologue-fade"><button class="intro-begin" onclick="prologueNext()">[ BEGIN THE SURVEY ]</button>' +
+        '<div class="text-dim" style="font-size:0.76rem;margin-top:10px;">or <a href="#" onclick="prologueSkip();return false;" style="color:var(--dim);">skip to the relic</a></div></div>';
+    } else if (prologueBeat < beats.length) {
+      var b = beats[prologueBeat];
+      html += '<pre class="ascii-art prologue-art ' + (b.color || 'text-dim') + ' prologue-fade">' + b.ascii + '</pre>';
+      html += '<div class="intro-body prologue-fade">';
+      b.text.forEach(function(p) { html += '<p>' + p + '</p>'; });
+      html += '</div>';
+      html += '<div class="intro-prompt prologue-fade"><button class="intro-begin" onclick="prologueNext()">[ ' + (b.next || 'CONTINUE') + ' ]</button></div>';
+    } else {
+      html += '<div class="intro-body prologue-fade">' +
         '<p>The relic surfaces from the earth at dawn.</p>' +
         '<p>Nobody else comes to look at it.</p>' +
         '<p>You do.</p>' +
-      '</div>' +
-      '<div class="intro-prompt">' +
-        '<label>WHO ARE YOU, WANDERER?</label>' +
-        '<input type="text" class="game-input" id="hero-name-input" maxlength="20" placeholder="Enter your name..." autocomplete="off">' +
-        '<button class="intro-begin" onclick="beginGame()">[ BEGIN ]</button>' +
-      '</div>';
+        '</div>' +
+        '<div class="intro-prompt prologue-fade">' +
+          '<label>WHO ARE YOU, WANDERER?</label>' +
+          '<input type="text" class="game-input" id="hero-name-input" maxlength="20" placeholder="Enter your name..." autocomplete="off">' +
+          '<button class="intro-begin" onclick="beginGame()">[ BEGIN ]</button>' +
+        '</div>';
+    }
+    el.innerHTML = html;
 
-    // Allow Enter key to begin
     setTimeout(function() {
       var input = document.getElementById('hero-name-input');
       if (input) {
@@ -36,27 +61,25 @@
     }, 100);
   }
 
+  window.prologueNext = function() { prologueBeat++; renderBeat(); };
+  window.prologueSkip = function() { prologueBeat = DATA.prologue.length; renderBeat(); };
+
   /* ── START GAME (after naming) ─────────── */
   window.beginGame = function() {
     var input = document.getElementById('hero-name-input');
-    var name  = input ? input.value.trim() : '';
+    var name  = heroNameSafe(input ? input.value : '');
     if (!name) name = 'Archivist';
 
     G.heroName = name;
     G.flags.introComplete = true;
 
-    // Hide intro, show game
     document.getElementById('intro-screen').classList.add('hidden');
     document.getElementById('game-container').classList.remove('hidden');
 
-    // Initial log
-    addLog('The Archive is established. Welcome, ' + name + '.', 'log-important');
-    addLog('Mana flows from the ley line. The work begins.', '');
+    addLog('You set your notebooks on a cleared stone and name the place: the Archive.', 'log-important');
+    addLog('The relic pulses once. Mana moves in the ley line beneath you, slow and steady.', '');
 
-    // Unlock first lore immediately
     Engine.checkLoreUnlocks();
-
-    // Start engine
     Engine.start();
     RENDER.render();
   };
@@ -68,21 +91,18 @@
     var saved = loadGame();
 
     if (saved && G.flags.introComplete) {
-      // Resume saved game
       document.getElementById('intro-screen').classList.add('hidden');
       document.getElementById('game-container').classList.remove('hidden');
 
       Engine.start();
       RENDER.render();
 
-      // Notify of offline progress
       setTimeout(function() {
-        var logs = G.gameLog.filter(function(l) { return l.msg.indexOf('Offline') !== -1; });
-        if (logs.length) showNotification(logs[0].msg, 'notif-loot');
+        var logs = G.gameLog.filter(function(l) { return l.msg.indexOf('You were away') !== -1; });
+        if (logs.length) showNotification(logs[0].msg, 'notif-loot', 6000);
       }, 500);
 
     } else {
-      // Fresh game — show intro
       showIntro();
     }
   }
@@ -90,16 +110,20 @@
   /* ── KEYBOARD SHORTCUTS ────────────────── */
   document.addEventListener('keydown', function(e) {
     if (!G.flags.introComplete) return;
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (G.awakening || G.ending) return;
     switch(e.key) {
       case '1': setScreen('archive');  break;
-      case '2': if (G.flags.mapVisible)     setScreen('map');      break;
-      case '3': if (G.flags.loreVisible)    setScreen('lore');     break;
-      case '4': if (G.flags.heroVisible)    setScreen('hero');     break;
+      case '2': if (G.flags.mapVisible)      setScreen('map');      break;
+      case '3': if (G.flags.loreVisible)     setScreen('lore');     break;
+      case '4': if (G.flags.heroVisible)     setScreen('hero');     break;
       case '5': if (G.flags.prestigeVisible) setScreen('prestige'); break;
+      case '6': if (G.flags.codexVisible)    setScreen('codex');    break;
+      case '7': if (G.flags.relicsVisible)   setScreen('relics');   break;
     }
   });
 
-  /* ── START ─────────────────────────────── */
   init();
 
 })();

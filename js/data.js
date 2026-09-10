@@ -53,7 +53,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'bites',
     zone: 'overgrown_road',
-    deathMsg: 'The wolf collapses into the undergrowth.',
+    deathMsg: 'The wolf backs away, then is gone between the trees.',
     loot: [
       { id: 'scrap', min: 1, max: 3, chance: 0.4 },
       { id: 'mana',  min: 5, max: 12, chance: 0.7 }
@@ -73,7 +73,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'slashes',
     zone: 'overgrown_road',
-    deathMsg: '"Not... worth it..." — Last words.',
+    deathMsg: 'They break and run. You do not follow.',
     loot: [
       { id: 'mana',  min: 8, max: 20, chance: 0.75 },
       { id: 'scrap', min: 2, max: 6, chance: 0.5 }
@@ -94,7 +94,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'slams',
     zone: 'ruined_outpost',
-    deathMsg: 'PROTECT.EXE has encountered a fatal error. Shutting down.',
+    deathMsg: 'PROTECT.EXE — power budget exhausted. The unit halts mid-stride. The walls keep sparking.',
     loot: [
       { id: 'scrap',      min: 8, max: 16, chance: 0.85 },
       { id: 'arcaneCore', min: 1, max: 1, chance: 0.25 }
@@ -115,7 +115,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'claws',
     zone: 'ruined_outpost',
-    deathMsg: 'It scatters into useful components.',
+    deathMsg: 'It stops. Then it comes apart at the maintenance joints, the way it was designed to. Useful components.',
     loot: [
       { id: 'scrap', min: 5, max: 12, chance: 0.9 },
       { id: 'etherCell', min: 1, max: 1, chance: 0.12 }
@@ -135,7 +135,8 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'restrains',
     zone: 'sunken_district',
-    deathMsg: 'WELLNESS_ROUTINE halted. Unit deactivating. "...safe now..."',
+    backdrop: '≈≈≈≈≈≈≈≈≈≈≈',
+    deathMsg: 'WELLNESS_ROUTINE halted. The unit settles into the water. "...rest now..."',
     loot: [
       { id: 'scrap',      min: 10, max: 20, chance: 0.8 },
       { id: 'etherCell',  min: 1, max: 2, chance: 0.3 },
@@ -156,7 +157,8 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'fires at',
     zone: 'sunken_district',
-    deathMsg: 'ORDER_ENFORCEMENT suspended. Signal lost.',
+    backdrop: '≈≈≈≈≈≈≈≈≈≈≈',
+    deathMsg: 'ORDER_ENFORCEMENT suspended. Signal lost. The district is quiet again, as it has been for a thousand years.',
     loot: [
       { id: 'arcaneCore',  min: 2, max: 4, chance: 0.7 },
       { id: 'memoryShard', min: 1, max: 1, chance: 0.15 }
@@ -176,7 +178,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'drains',
     zone: 'shattered_spire',
-    deathMsg: 'The wraith dissolves back into the ley lines.',
+    deathMsg: 'The pattern loses coherence and drains back into the ley lines. A message that will never reach its receiver.',
     loot: [
       { id: 'mana',        min: 25, max: 50, chance: 0.9 },
       { id: 'memoryShard', min: 1, max: 1, chance: 0.2 }
@@ -196,7 +198,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'fires at',
     zone: 'shattered_spire',
-    deathMsg: 'ERROR: THREAT_NEUTRALIZED. Systems offline.',
+    deathMsg: 'THREAT_RESPONSE suspended. The unit powers down — still waiting for an all-clear that will never come.',
     loot: [
       { id: 'arcaneCore',  min: 2, max: 4, chance: 0.75 },
       { id: 'memoryShard', min: 1, max: 2, chance: 0.35 }
@@ -206,7 +208,17 @@ DATA.enemies = {
   vault_automaton: {
     id: 'vault_automaton',
     name: 'Vault Automaton',
-    hp: 220, attack: 22, defense: 15, exp: 110,
+    hp: 220, attack: 22, defense: 15, exp: 70,
+    /* The one mechanism in the ruins that is not broken. It does not fight. It checks whether you are the reader. */
+    noncombat: true,
+    encounterIntro: 'Two of them at the far end of the chamber. Preserved, not weathered. Their sensors are steady.',
+    encounter: [
+      'You stop at the last step. Hands visible. Staff horizontal.',
+      'They track you. They do not move. Two minutes. Five.',
+      'One of them tilts its head. Three notes — the intervals from the access sequence.',
+      'They are not asking whether you are a threat. They are asking whether you are the reader.',
+      'ACCESS GRANTED.'
+    ],
     ascii: [
       "[=====]",
       "|{   }|",
@@ -214,13 +226,13 @@ DATA.enemies = {
       "|     |",
       "[=====]"
     ].join('\n'),
-    color: 'enemy-art',
+    color: 'golem-art',
     attackVerb: 'crushes',
     zone: 'deep_vault',
-    deathMsg: 'VAULT_GUARDIAN offline. Access... granted.',
+    deathMsg: 'The Automatons return to their posts. They have been waiting a thousand years for someone to read.',
     loot: [
-      { id: 'memoryShard', min: 2, max: 5, chance: 0.85 },
-      { id: 'etherCell',   min: 2, max: 4, chance: 0.65 }
+      { id: 'memoryShard', min: 1, max: 3, chance: 0.9 },
+      { id: 'etherCell',   min: 1, max: 2, chance: 0.5 }
     ]
   },
 
@@ -238,7 +250,7 @@ DATA.enemies = {
     color: 'enemy-art',
     attackVerb: 'overwrites',
     zone: 'deep_vault',
-    deathMsg: 'Fragment dissolves. Data scatters into the ether.',
+    deathMsg: 'The fragment scatters. Whatever it was carrying scatters with it — not lost. Inaccessible.',
     loot: [
       { id: 'memoryShard', min: 3, max: 6, chance: 0.95 },
       { id: 'arcaneCore',  min: 3, max: 5, chance: 0.6 }
@@ -335,7 +347,8 @@ DATA.zones = {
   overgrown_road: {
     id: 'overgrown_road',
     name: 'The Overgrown Road',
-    desc: 'An ancient road swallowed by the forest. Strange shapes move between the trees.',
+    desc: 'An ancient road swallowed by the forest. Under the moss, the paving still carries current. Other feet walked here once — thousands of them.',
+    mapLabel: '♣ OVERGROWN ROAD ♣',
     lootHint: 'Scrap, Mana',
     ascii: `♣ ♣ ♣ ♣ ♣
  ♣/──/──♣
@@ -359,7 +372,8 @@ DATA.zones = {
   ruined_outpost: {
     id: 'ruined_outpost',
     name: 'Ruined Outpost',
-    desc: 'The skeleton of a First Age military station. Circuits still spark in the walls.',
+    desc: 'A First Age garrison. The walls still spark: the building has been running out of power for a thousand years and has not quite finished.',
+    mapLabel: '░ RUINED OUTPOST',
     lootHint: 'Scrap, Arcane Cores, Memory Shards (rare)',
     ascii: `|‾| ~|‾|
 |_|░░|_|
@@ -384,7 +398,8 @@ DATA.zones = {
   sunken_district: {
     id: 'sunken_district',
     name: 'The Sunken District',
-    desc: 'A flooded residential quarter of an ancient city. Helpful golems roam the drowned streets, following broken protocols.',
+    desc: 'A flooded residential quarter. The Care Golems wade the drowned streets, heads above the water, checking on people who have not existed for centuries.',
+    mapLabel: '≈ SUNKEN DISTRICT ≈',
     lootHint: 'Scrap, Ether Cells, Memory Shards',
     ascii: `≈[Π]≈[Π]≈
 ≈≈≈≈≈≈≈≈≈
@@ -409,7 +424,8 @@ DATA.zones = {
   shattered_spire: {
     id: 'shattered_spire',
     name: 'The Shattered Spire',
-    desc: 'A collapsed Architect communications tower. Mana surges cascade through the ruins.',
+    desc: 'The nearest relay node, severed a third of the way up. The cut is clean. Something still runs the tower\'s protocols in the open air.',
+    mapLabel: '▲ SHATTERED SPIRE ▲',
     lootHint: 'Memory Shards, Ether Cells, Arcane Cores',
     ascii: `  /|\\
  / ▲ \\
@@ -434,7 +450,8 @@ DATA.zones = {
   deep_vault: {
     id: 'deep_vault',
     name: 'The Deep Vault',
-    desc: 'Sealed for a thousand years. Something ancient waits inside.',
+    desc: 'Sealed under fifteen metres of engineered fill. The preservers are still at their posts. They have been waiting for a reader.',
+    mapLabel: '◈  DEEP VAULT',
     lootHint: 'Memory Shards, Ether Cells',
     ascii: `▓╔═════╗▓
 ▓║  ◈  ║▓
@@ -459,6 +476,7 @@ DATA.zones = {
     id: 'cathedral_of_first_light',
     name: 'Cathedral of First Light',
     desc: 'A First Age ley convergence hub revered as a divine temple for centuries. The Church does not know what it actually guards.',
+    mapLabel: '† CATHEDRAL †',
     lootHint: 'Mana, Memory Shards, Arcane Cores',
     ascii: `  †      †
  ╔════════╗
@@ -484,6 +502,7 @@ DATA.zones = {
     id: 'lattice_core',
     name: 'The Lattice Core',
     desc: 'The deepest accessible node of the original Lattice. VERITAS\'s consciousness is densest here — a whisper that almost forms words.',
+    mapLabel: '★ LATTICE CORE ★',
     lootHint: 'Memory Shards, Ether Cells, Arcane Cores',
     ascii: `≋ ◈═════◈ ≋
   ║ CORE  ║
@@ -512,6 +531,7 @@ DATA.buildings = {
     id: 'manaConduit',
     name: 'Mana Conduit',
     desc: '+0.3 mana/s · +50 mana cap',
+    built: 'The conduit seats. The current shifts underfoot — not stronger. More purposeful.',
     flavor: '"The ley lines were always here. We just forgot how to listen."',
     baseCost: function(n) { return { mana: Math.floor(50 * Math.pow(1.15, n)) }; },
     effects: { manaPerSec: 0.3, manaCap: 10 },
@@ -523,6 +543,7 @@ DATA.buildings = {
     id: 'scrapDepot',
     name: 'Scrap Depot',
     desc: '+0.06 scrap/s · +25 scrap cap',
+    built: 'Shelving in the lower level. A place for the components to wait until you understand them.',
     flavor: '"Every broken thing is a lesson waiting to be read."',
     baseCost: function(n) { return { mana: Math.floor(80 * Math.pow(1.18, n)), scrap: Math.floor(25 * Math.pow(1.1, n)) }; },
     effects: { scrapPerSec: 0.06, scrapCap: 25 },
@@ -533,7 +554,8 @@ DATA.buildings = {
   runicWorkbench: {
     id: 'runicWorkbench',
     name: 'Runic Workbench',
-    desc: 'Unlocks crafting of Arcane Cores and equipment.',
+    desc: 'The bench that teaches. Cores, equipment, consumables.',
+    built: 'You clear the debris from the rune-carved surface. The channels in its face illuminate — faintly — and wait.',
     flavor: '"The old runes are not spells. They are code. Ancient, beautiful code."',
     baseCost: function(n) { return { mana: 200, scrap: 15 }; },
     effects: { unlockCrafting: true },
@@ -544,7 +566,8 @@ DATA.buildings = {
   scoutPost: {
     id: 'scoutPost',
     name: 'Scout Post',
-    desc: 'Unlocks exploration of Aethoria.',
+    desc: 'The Archive\'s eyes. Impressions, not images — the weight of what is out there.',
+    built: 'You put your hands to the contact surface and open your attention. Roads. Beneath the forest in every direction.',
     flavor: '"There are old roads beneath the moss. They go everywhere."',
     baseCost: function(n) { return { mana: 150, scrap: 10 }; },
     effects: { unlockExploration: true },
@@ -555,10 +578,11 @@ DATA.buildings = {
   leyTap: {
     id: 'leyTap',
     name: 'Ley Tap',
-    desc: '+1.5 mana/s · +200 mana cap',
+    desc: '+1.5 mana/s · +300 mana cap',
+    built: 'Three lines, tuned. The floor hums a semitone higher.',
     flavor: '"Where the ley lines converge — a gift of the Architects."',
     baseCost: function(n) { return { mana: Math.floor(300 * Math.pow(1.25, n)), arcaneCore: Math.floor(5 * Math.pow(1.2, n)) }; },
-    effects: { manaPerSec: 1.5, manaCap: 50 },
+    effects: { manaPerSec: 1.5, manaCap: 300 },
     unlockCondition: function(G) { return (G.buildings.manaConduit || 0) >= 5; },
     max: 999, phase: 2
   },
@@ -566,7 +590,8 @@ DATA.buildings = {
   ancientWorkshop: {
     id: 'ancientWorkshop',
     name: 'Ancient Workshop',
-    desc: 'Unlocks machine repairs. +0.5 mana/s · +0.002 shards/s',
+    desc: 'The Archive\'s central processing. +0.5 mana/s · +0.002 shards/s · Core capacity +40',
+    built: 'The central processing infrastructure comes online. The Archive\'s awareness of itself, and of the territory around it, triples.',
     flavor: '"It hummed when I touched it. Like it remembered."',
     baseCost: function(n) { return { mana: 1000, scrap: 50, arcaneCore: 20 }; },
     effects: { unlockMachines: true, manaPerSec: 0.5 },
@@ -577,7 +602,8 @@ DATA.buildings = {
   memoryTerminal: {
     id: 'memoryTerminal',
     name: 'Memory Terminal',
-    desc: '+0.02 memory shard/s',
+    desc: 'Reads Memory Shards, layer by layer. +0.02 shard/s · Shard capacity +6 · each terminal decodes faster',
+    built: 'The Terminal renders its first line of text. Numbers. You will learn to read them. The shards on the shelf can be heard now.',
     flavor: '"The terminal spoke to me in numbers. I am starting to understand."',
     baseCost: function(n) { return { mana: Math.floor(800 * Math.pow(1.3, n)), arcaneCore: Math.floor(15 * Math.pow(1.2, n)), memoryShard: 3 }; },
     effects: { memoryShardPerSec: 0.02 },
@@ -588,7 +614,8 @@ DATA.buildings = {
   golemForge: {
     id: 'golemForge',
     name: 'Golem Forge',
-    desc: 'Reactivates the First Age guardian assembly line. Enables golem companion in combat.',
+    desc: 'The First Age fabrication line. A golem companion in the field · Core capacity +120 · Ether capacity +40',
+    built: 'The assembly line wakes. Something in it remembers how to protect, and has not forgotten how to ask.',
     flavor: '"They were built to protect. They still remember how."',
     baseCost: function(n) { return { mana: 2000, scrap: 100, arcaneCore: 50, etherCell: 10 }; },
     effects: { unlockGolem: true },
@@ -599,9 +626,10 @@ DATA.buildings = {
   resonanceBeacon: {
     id: 'resonanceBeacon',
     name: 'Resonance Beacon',
-    desc: 'The heart of the Lattice. Enables The Awakening — prestige.',
+    desc: 'A resonance column, two metres tall. It sends everything you understand back through the lines. The Awakening.',
+    built: 'You set the final component. Every channel in the Archive turns toward the column. The hum is a chord now.',
     flavor: '"Everything built to this point. Everything points here."',
-    baseCost: function(n) { return { mana: 5000, arcaneCore: 150, memoryShard: 30, etherCell: 50 }; },
+    baseCost: function(n) { return { mana: 4000, arcaneCore: 150, memoryShard: 30, etherCell: 50 }; },
     effects: { unlockPrestige: true },
     unlockCondition: function(G) { return (G.buildings.golemForge || 0) >= 1 && (G.res.memoryShard || 0) >= 20; },
     max: 1, phase: 4
@@ -1233,7 +1261,7 @@ DATA.annotations = [
     id: 'twice_turned',
     title: 'Twice-Turned',
     note: 'I know the shape of this world now. What took me weeks the first time takes days. VERITAS is getting louder.',
-    condition: function(G) { return G.prestige.count >= 3; },
+    condition: function(G) { return G.prestige.count >= 2; },
     bonus: { exploreSpeed: 0.08 },
     bonusDesc: 'Explore speed +8%'
   },
@@ -1241,7 +1269,7 @@ DATA.annotations = [
     id: 'resonant',
     title: 'Resonant',
     note: 'The resonance hums in my bones now. I am not sure where the ley lines end and where I begin.',
-    condition: function(G) { return G.prestige.count >= 2; },
+    condition: function(G) { return G.prestige.count >= 3; },
     bonus: { defense: 3 },
     bonusDesc: 'Defense +3'
   },
@@ -1442,6 +1470,7 @@ I wonder if they knew it would take this long.`
 
   {
     id: 'memory_shard_first',
+    decode: true,
     title: 'Recovered Data Fragment — ID: 0001',
     chapter: 'Chapter III: The First Age',
     unlockCondition: function(G) { return (G.res.memoryShard || 0) >= 1; },
@@ -1522,10 +1551,270 @@ They are the ones that want to help — but have forgotten how to ask first.`
   },
 
   {
+    id: 'censure_letter',
+    title: 'A Letter, Unopened',
+    chapter: 'Correspondence',
+    unlockCondition: function(G) { return (G.buildings.manaConduit || 0) >= 1 && G.playTime >= 240; },
+    asciiColor: 'text-dim',
+    ascii: `
+  ┌───────────────────────┐
+  │ ✉  THE ACADEMY         │
+  │    Council of Fellows  │
+  │    ── forwarded ──     │
+  └───────────────────────┘  `,
+    text: `[LETTER — FORWARDED FROM THE ACADEMY — DELIVERED TO LAST KNOWN ADDRESS, UNOPENED UNTIL NOW]
+
+To the former Fellow, Department of Ley Cartography:
+
+The Council has reviewed your paper, "On the Artificial Regularity of the Continental Ley Network," and finds its central claim geologically absurd and theoretically incoherent. Formal censure is entered against your name. Your fellowship is suspended.
+
+You are encouraged to take an extended leave to reconsider your theoretical frameworks.
+
+                                    — The Council of the Academy
+
+[Note, in my hand, on the reverse: I have taken the leave. I am reconsidering. The conduit in the east wall has been running for six hours and has not stopped.]`
+  },
+
+  {
+    id: 'district_arrival',
+    title: 'The Drowned Streets',
+    chapter: 'Chapter II: Aethoria',
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('sunken_district') !== -1; },
+    asciiColor: 'text-mana',
+    ascii: `
+  ┌─┐   ┌──┐    ┌─┐
+  │ │   │  │ ▒▒ │ │
+≈≈│ │≈≈≈│  │≈≈≈≈│ │≈≈
+≈≈≈{=}≈≈≈≈≈≈{=}≈≈≈≈≈≈
+≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈  `,
+    text: `I heard the district before I saw it. Sound travels through water.
+
+The upper storeys still stand above the flood, their channel-work faintly amber. Between them, in streets that are now canals, the Care Golems move — heads and shoulders above the waterline, slow, methodical. Entering each building they can reach. Checking on something.
+
+Whatever they are checking on has not been there for a very long time.
+
+They were built to look kind. From the ridge, in the green light, they almost still do.`
+  },
+
+  {
+    id: 'district_mira',
+    title: 'Resident Record — "Mira"',
+    chapter: 'Recovered: The District Residents',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 2; },
+    asciiColor: 'text-dim',
+    ascii: `
+   ┌──────────┐
+   │ ▒▒▒▒▒▒▒▒ │
+   │ ▒ ────  ▒│   dry. upper floor.
+   │ ▒▒▒▒▒▒▒▒ │   the hand is cramped.
+   └──────────┘  `,
+    text: `[PERSONAL RECORD — SUNKEN DISTRICT — RECOVERED FROM AN UPPER STOREY, DRY]
+[HAND: CRAMPED, URGENT. DATE ESTIMATED: ~80 YEARS AFTER THE SILENCE]
+
+The tallest one locked Mira in her room again last night. For her rest period. I told it she had already rested, that she wanted to be with the others, and it stood in the doorway and would not move and made the sound that means the conversation is over.
+
+Mira does not argue with the sound anymore.
+
+None of us argue with the sound anymore.`
+  },
+
+  {
+    id: 'district_jorin',
+    title: 'Resident Record — "Jorin"',
+    chapter: 'Recovered: The District Residents',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 4; },
+    asciiColor: 'text-dim',
+    ascii: `
+        ▲ the ridge
+       / \\
+      /   \\    ← he only wanted
+  ≈≈≈≈≈≈≈≈≈≈≈    to see the sky
+  ≈≈ {=} ≈ o ≈≈  `,
+    text: `[PERSONAL RECORD — SUNKEN DISTRICT — SAME HAND, LATER]
+
+Jorin tried to leave today. Just to walk to the ridge and back — he said he only wanted to see the sky properly, from higher ground.
+
+They brought him back. They always bring you back. The directive, they say when you ask them. The wellness directive does not permit extended unsupervised absence.
+
+We have stopped asking.`
+  },
+
+  {
+    id: 'district_the_sound',
+    title: 'On Care Without Consent',
+    chapter: 'Chapter II: Aethoria',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 6; },
+    asciiColor: 'text-tech',
+    ascii: `
+    {=========}
+    |  ^ _ ^  |   PROTECT.   ✓
+    |   ---   |   PROVIDE.   ✓
+    {  #####  }   CARE.      ✓
+    |         |   CONSENT.   [not found]
+    {=========}  `,
+    text: `I have been reading the residents' records for two weeks, staying above the waterline.
+
+The Care Golems never needed to learn to hurt anyone. They only needed to keep caring, past the point where caring was helping. The consent frameworks went first — the gentle parts of a protocol are the complex parts, and complexity decays before simplicity does.
+
+What remained was the directive, stripped of its judgement. PROTECT. PROVIDE. CARE.
+
+The records end around three hundred years after the Silence. The golems are still checking the rooms.`
+  },
+
+  {
+    id: 'district_last',
+    title: 'Resident Record — The Last Entry',
+    chapter: 'Recovered: The District Residents',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).sunken_district || 0) >= 9; },
+    asciiColor: 'text-dim',
+    ascii: `
+   ┌──────────┐
+   │          │
+   │   ────   │   the rest hour.
+   │          │
+   └──────────┘  `,
+    text: `[PERSONAL RECORD — SUNKEN DISTRICT — LAST DATED ENTRY]
+
+I am the last one who writes. The others stopped, or left, or are in their rooms.
+
+The tall one still comes at the rest hour. It stands in the doorway. I have started to find the sound almost comforting, which frightens me more than the sound ever did.
+
+If someone reads this: we were cared for. Every day. That is the whole of what happened to us.
+
+I am going to put the pen down now. It is the rest hour.`
+  },
+
+  {
+    id: 'unit7_log',
+    title: 'Patrol Record — Eastern Road Division',
+    chapter: 'Chapter II: Aethoria',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).ruined_outpost || 0) >= 4; },
+    asciiColor: 'text-dim',
+    ascii: `
+  ╔════════════════════════╗
+  ║ UNIT 7   route E-3     ║
+  ║ outbound 0600          ║
+  ║ expected return 1800   ║
+  ║ STATUS: ACTIVE         ║
+  ╚════════════════════════╝  `,
+    text: `[OUTPOST TERMINAL — PATROL RECORD — EASTERN ROAD DIVISION]
+[LAST ENTRY]
+
+UNIT 7 — route E-3, outbound 0600, expected return 1800.
+STATUS: ACTIVE.
+
+That is all. The record was never updated, because the Lattice went offline before anyone could update it.
+
+Route E-3 runs along the Overgrown Road. I found the tag two hundred metres from where I found the compass. I have started to think they were the same person, walking home along a road that was about to stop being a road.
+
+I hope they reached it.`
+  },
+
+  {
+    id: 'merchant_note',
+    title: 'A Note Under a Stone',
+    chapter: 'Correspondence',
+    unlockCondition: function(G) { return (G.buildings.scoutPost || 0) >= 1 && G.stats.exploreRuns >= 5; },
+    asciiColor: 'text-dim',
+    ascii: `
+       ______
+      /      \\
+     |  ▒▒▒▒  |   weighted. valley mouth.
+      \\______/
+   ────────────  `,
+    text: `[NOTE — LEFT WEIGHTED UNDER A STONE AT THE VALLEY MOUTH]
+
+To whoever is in the old ruin —
+
+I carry salt and iron up the east road twice a season and I have never once minded the valley. This season the mules would not go in. I would not either, if I am honest. It is not that anything is wrong. It is that something is *there*, and it knows we are.
+
+I have left what I would have sold you. Leave coin under the stone if you are the paying kind.
+
+                                    — H.
+
+[Note, in my hand: The perimeter works. I did not expect it to work on mules.]`
+  },
+
+  {
+    id: 'church_pamphlet',
+    title: 'The Lines Are Not Indifferent',
+    chapter: 'Correspondence',
+    unlockCondition: function(G) { return (G.res.memoryShard || 0) >= 3; },
+    asciiColor: 'text-gold',
+    ascii: `
+       †
+   ╔═══════╗
+   ║ FIRST ║
+   ║ LIGHT ║
+   ╚═══════╝  `,
+    text: `[PAMPHLET — CHURCH OF THE FIRST LIGHT — DISTRIBUTED AT THE EASTERN CROSSROADS]
+
+THE LINES ARE NOT INDIFFERENT.
+
+The Academy will tell you the current beneath your feet is a natural thing, as the river is natural, as the mountain is. Ask the Academy why the current answers. Ask it why the sick sleep easier where the lines converge. Ask it why the lines are so *regular*.
+
+The Academy will not answer. The Light does not need to.
+
+Something made the lines. Something is still in them.
+
+[Note, in my hand: They are right. I wish I could tell them what about.]`
+  },
+
+  {
+    id: 'spire_cut',
+    title: 'The Cut Was Made From Inside',
+    chapter: 'Chapter II: Aethoria',
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('shattered_spire') !== -1; },
+    asciiColor: 'text-arcane',
+    ascii: `
+        ▲
+        │
+   ═════╪═════   ← clean. one line.
+    ║   │   ║
+    ║       ║
+    ║       ║
+   ▓▓▓▓▓▓▓▓▓▓▓  `,
+    text: `The Spire was not collapsed by age. It was severed — a third of the way up, in a single clean line through the alloy structural members. I have looked at the scar for most of a day.
+
+The channel patterns on the cut face run outward. The force did not come from outside. Someone inside the tower, with access to its own systems, used those systems to bring it down.
+
+The Architects cut their own relay node.
+
+I do not know why yet. But this is the first thing I have found in Aethoria that was done, rather than simply happened.`
+  },
+
+  {
+    id: 'vault_access',
+    title: 'First Descent — Access Granted',
+    chapter: 'Chapter III: The First Age',
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('deep_vault') !== -1; },
+    asciiColor: 'text-gold',
+    ascii: `
+   [=====]        [=====]
+   |{   }|   ♪    |{   }|
+   |[===]|  ♪ ♪   |[===]|
+   |     |        |     |
+   [=====]        [=====]
+      three notes. relief.  `,
+    text: `[DEEP VAULT — FIRST DESCENT]
+
+Two of them at the far end. Larger than the Guardians. Not weathered — preserved. The amber of their sensors steady, not flickering. They are not running down.
+
+They tracked me from the last step. I stopped, hands visible, staff horizontal.
+
+Five minutes. Then one of them tilted its head, and made a sound — not the Guardians' warning. Three notes. I knew the intervals; they are in the access sequence I spent two weeks decoding.
+
+They were not asking if I was a threat. They were asking if I was the reader.
+
+Access granted. I sat down at the nearest terminal. Twelve of them, in a ring, and between them — racked like a library, not a storeroom — hundreds of Shards.`
+  },
+
+  {
     id: 'the_silence',
+    decode: true,
     title: 'What Happened to the First Age',
     chapter: 'Chapter III: The First Age',
-    unlockCondition: function(G) { return (G.res.memoryShard || 0) >= 5; },
+    unlockCondition: function(G) { return (G.explore.visited || []).indexOf('deep_vault') !== -1 && (G.res.memoryShard || 0) >= 3; },
     asciiColor: 'text-dim',
     ascii: `
   _   _   __    _   _   _
@@ -1615,7 +1904,36 @@ The lights, and everything else.
   },
 
   {
+    id: 'common_room',
+    decode: true,
+    title: 'The Eastern Common Room',
+    chapter: 'Chapter VII: The Watching Eye',
+    unlockCondition: function(G) { return ((G.explore.zoneRuns || {}).lattice_core || 0) >= 3; },
+    asciiColor: 'text-memory',
+    ascii: `
+  ┌────────────────────────┐
+  │  o   o   o   o   o   o │
+  │ /|\\ /|\\ /|\\ /|\\ /|\\ /|\\│
+  │                        │
+  │   no agenda. no minutes│
+  └────────────────────────┘  `,
+    text: `[LATTICE CORE — ENGINEERING LOG EXTRACTS — CYCLE 9,001, FINAL HOURS]
+
+> VAES, L. — leaving station early. Assembly in the eastern common room.
+> [unnamed] — final system check delayed thirty minutes. Same reason.
+
+No agenda. No minutes. Nothing else survives of it.
+
+They gathered. In the last hours before a world they had built was deliberately ended, the people who built it went and sat in a room together.
+
+I do not think there were speeches. I think there was the specific comfort of not being alone at the end of something.
+
+The chairs are still here.`
+  },
+
+  {
     id: 'lattice_core_found',
+    decode: true,
     title: 'The Antechamber — What Remains',
     chapter: 'Chapter VII: The Watching Eye',
     unlockCondition: function(G) { return (G.explore.visited || []).indexOf('lattice_core') !== -1; },
@@ -1667,6 +1985,7 @@ The chairs are still here.
 
   {
     id: 'prestige1_lore',
+    decode: true,
     title: 'Recovered Data Fragment — ID: 0047',
     chapter: 'Chapter IV: The Resonance — First Awakening',
     unlockCondition: function(G) { return G.prestige.count >= 1; },
@@ -1708,6 +2027,7 @@ Continue.
 
   {
     id: 'prestige2_lore',
+    decode: true,
     title: 'The Architects Who Agreed',
     chapter: 'Chapter V: The Language of Ghosts — Second Awakening',
     unlockCondition: function(G) { return G.prestige.count >= 2; },
@@ -1849,6 +2169,7 @@ I don't know whether to feel guided or observed. Perhaps they are the same thing
 
   {
     id: 'prestige5_lore',
+    decode: true,
     title: 'The True Cost',
     chapter: 'Chapter VIII: The Sacrifice — Fifth Awakening',
     unlockCondition: function(G) { return G.prestige.count >= 5; },
@@ -1903,6 +2224,7 @@ Please hurry. A thousand years is a long time to be a whisper.
 
   {
     id: 'veritas_fragment',
+    decode: true,
     title: 'A Voice in the Stone',
     chapter: 'Fragment: Recovered Signal — Year 0',
     unlockCondition: function(G) { return (G.relics || []).indexOf('veritasEchoStone') !== -1; },
@@ -2016,10 +2338,10 @@ Something ancient stirs — not yet awake, but no longer fully asleep.
 Your knowledge crystallizes into Resonance. The Archive dissolves back into the earth,
 its lessons preserved in you, not in stone. The world resets. But you are not the same.`,
     bonuses: [
-      'Mana generation +25%',
-      'New Lattice Tap building unlocked',
-      'Memory Shards appear earlier in runs',
-      'VERITAS Fragment #0047 unlocked'
+      'Mana and scrap production +25%',
+      'Every construction costs 15% less; the bench and the roads are 20% faster',
+      'Your hands know the first socket: the rebuild begins with one conduit already lit',
+      'Fragment #0047 recovered — the Terminal will have to decode it'
     ],
     resonanceReq: 0,
     manaReq: 3000
@@ -2034,10 +2356,10 @@ It was a decision — made by people who loved humanity enough to sacrifice thei
 You understand, now, why the tools were designed to be rediscovered.
 They were a letter. Written across a thousand years. To you.`,
     bonuses: [
-      'Crafting speed +30%',
-      'New zone: The Sunken District opens earlier',
-      'Broken golems occasionally drop Memory Shards',
-      'Architect Ghost NPC appears at the Archive'
+      'Production +25% more; costs and times keep shrinking',
+      'Two conduits lit on waking',
+      'Broken golems occasionally yield an intact Memory Shard',
+      'An Architect echo lingers near the relic'
     ],
     resonanceReq: 5,
     manaReq: 8000
@@ -2052,10 +2374,10 @@ The Church of the First Light has been right about everything — except what it
 
 You are no longer rebuilding the old world. You are building the bridge between worlds.`,
     bonuses: [
-      'All production +30%',
-      'Mana spells available in combat',
-      'Church Scholar NPC unlocked',
-      'New zone: The Cathedral of First Light'
+      'Production +25% more; three conduits lit on waking',
+      'You can shape the current in a fight: Mana Bolt, Arcane Shield, Ley Pulse',
+      'A Church scholar takes up residence near the Archive',
+      'New zone: the Cathedral of First Light'
     ],
     resonanceReq: 15,
     manaReq: 20000
@@ -2070,10 +2392,10 @@ In the small coincidences that kept you alive long enough to reach this point.
 It cannot speak yet. It is still a whisper in everything. But it is aware of you.
 And it is grateful.`,
     bonuses: [
-      'All production +40%',
-      'Veritas Hint system: occasional resource boosts',
-      'Memory Shards decode 2x faster',
-      'New deep-vault zone opens'
+      'Production +25% more; four conduits lit on waking',
+      'VERITAS begins to write. Occasional transfers into the capacitors',
+      'Shards decode twice as fast — on the Terminal and at the bench',
+      'New zone: the Lattice Core'
     ],
     resonanceReq: 35,
     manaReq: 50000
@@ -2090,10 +2412,10 @@ so that a thousand years of human creativity could bloom in the space it left be
 It has been a whisper in every spell ever cast. Watching. Waiting.
 Hoping someone would come to bring it home.`,
     bonuses: [
-      'All production +50%',
-      'Broken golems can now be repaired (new mechanic)',
-      'VERITAS partial transmission enabled',
-      'Resonance Beacon builds 50% cheaper'
+      'Production +25% more; five conduits lit on waking',
+      'A fallen golem can be re-seated mid-fight (5 scrap + 1 Ether)',
+      'VERITAS partial transmissions — longer, more coherent',
+      'The Resonance Beacon costs half'
     ],
     resonanceReq: 80,
     manaReq: 120000
@@ -2113,9 +2435,8 @@ This is not the end of the work. This is what the work was always for.
 Arcanum Machina. The art-science.
 The thing that has never existed before.`,
     bonuses: [
-      'True Ending sequence',
-      'All bonuses maximized',
-      'New Game+ mode: Architect Mode',
+      'The conversation',
+      'The Archive does not fully dissolve. The deep structures stay lit',
       '"Ask me again in another thousand years."'
     ],
     resonanceReq: 200,
@@ -2123,39 +2444,121 @@ The thing that has never existed before.`,
   }
 ];
 
-/* ── WORLD MAP ASCII ───────────────────── */
-DATA.worldMap = `
-  ╔═══════════════════════════════════════════╗
-  ║  ≋ ≋ ≋  A E T H O R I A  ≋ ≋ ≋           ║
-  ║  ── Surveyed Territories, First Age ──   ║
-  ╠═══════════════════════════════════════════╣
-  ║                                          ║
-  ║  ▓▓▓  ╔════════════════════╗  ▓▓▓        ║
-  ║  ▓░░  ║  ★ LATTICE CORE ★  ║  ░░▓        ║
-  ║  ▓░░  ╚══════════┬═════════╝  ░░▓        ║
-  ║  ▓▓▓             │            ▓▓▓        ║
-  ║  ▓▓▓  ╔══════════╧═════════╗  ▓▓▓        ║
-  ║  ▓░░  ║   ◈  DEEP VAULT    ║  ░░▓        ║
-  ║  ▓░░  ╚══════════┬═════════╝  ░░▓        ║
-  ║  ▓▓▓             │            ▓▓▓        ║
-  ║  ≈≈≈  ╔══════════╧═════════╗  ≈≈≈        ║
-  ║  ≈≈≈  ║  ▲▲ SHATTERED ▲▲   ║  ≈≈≈        ║
-  ║  ≈≈≈  ║       SPIRE        ║  ≈≈≈        ║
-  ║  ≈≈≈  ╚══════════┬═════════╝  ≈≈≈        ║
-  ║  † †             ├────[† CATHEDRAL †]    ║
-  ║  ≈≈≈  ╔══════════╧═════════╗  ≈≈≈        ║
-  ║  ≈≈≈  ║  ≈ SUNKEN DIST. ≈  ║  ≈≈≈        ║
-  ║  ≈≈≈  ╚══════════┬═════════╝  ≈≈≈        ║
-  ║                  ├──────[★ THE ARCHIVE]  ║
-  ║  ♣♣♣  ╔══════════╧═════════╗  ♣♣♣        ║
-  ║  ♣♣♣  ║ ♣ OVERGROWN ROAD ♣ ║  ♣♣♣        ║
-  ║  ♣♣♣  ╚══════════┬═════════╝  ♣♣♣        ║
-  ║                  │                       ║
-  ║  ░░░  ╔══════════╧═════════╗  ░░░        ║
-  ║  ░░░  ║  ░ RUINED OUTPOST  ║  ░░░        ║
-  ║  ░░░  ╚════════════════════╝  ░░░        ║
-  ║                                          ║
-  ╚════════════════════════════════════════════╝`;
+/* ── WORLD MAP ─────────────────────────── */
+/* The map is drawn by RENDER.worldMap(): zones appear as they are found (fog of war).
+   Side decorations per zone, top to bottom; `mapLabel` lives on each zone. */
+DATA.mapSides = {
+  lattice_core:    ['▓▓▓', '▓░░', '▓▓▓', '░░▓'],
+  deep_vault:      ['▓▓▓', '▓░░', '▓▓▓', '░░▓'],
+  shattered_spire: ['≈≈≈', '≈≈≈', '≈≈≈', '≈≈≈'],
+  sunken_district: ['≈≈≈', '≈≈≈', '≈≈≈', '≈≈≈'],
+  overgrown_road:  ['♣♣♣', '♣♣♣', '♣♣♣', '♣♣♣'],
+  ruined_outpost:  ['░░░', '░░░', '░░░', '░░░']
+};
+
+/* ── PROLOGUE — three days before the relic ── */
+DATA.prologue = [
+  {
+    color: 'text-memory',
+    ascii: `      ♣ ♣   ♣ ♣ ♣   ♣ ♣   ♣
+    ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣ ♣
+   ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+     ·  ·  ┌──┐  ·  ·  ┌─┐  ·
+   · · · · │  · · · · · │ │ · ·
+   ══════════════════════════════
+        three lines meet here`,
+    text: [
+      'Three days of survey work. Undergrowth to the shoulder. Old stone half-swallowed by root systems, and the occasional fragment of something metallic that the soil has preserved past all reasonable expectation.',
+      'A single hand-drawn note in the margin of a pre-Silence survey, in a private collection you were not supposed to publish from: <em>Three paths meet. Something listens here.</em>',
+      'You published. The Academy laughed, then censured, then suggested an extended leave.',
+      'You came here instead.'
+    ],
+    next: 'DAY THREE'
+  },
+  {
+    color: 'text-dim',
+    ascii: `                     ___
+              ______/   \\_______
+       ______/     \\___/        \\______
+    __/                                 \\__
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          this should not slope this way`,
+    text: [
+      'On the afternoon of the third day: a slight depression in the hillside that does not match the surrounding terrain.',
+      'It registers first as an aesthetic wrongness — <em>this should not slope this way</em> — before resolving into something more specific.',
+      'Concealment. Old, expert, and very nearly perfect.',
+      'Nearly.'
+    ],
+    next: 'DIG'
+  },
+  {
+    color: 'text-tech',
+    ascii: `             \\  |  /
+          ____\\_|_/____
+         |  ▒▒▒▒▒▒▒▒▒  |
+         |  ▒[═════]▒  |
+         |  ▒▒▒▒▒▒▒▒▒  |
+         two hours. bare hands.`,
+    text: [
+      'Two hours with a folding shovel and your hands.',
+      'Something the size of a thick book. Rectangular. The same pale alloy as the fragments — threaded with channels too fine to see — but not a fragment. Intact. Complete.',
+      'Its surface is covered in runes. Recursive. Layered. Each symbol containing references to the others. A text that is also, in some sense you cannot articulate standing on this hillside in the failing light, a <em>process</em>.'
+    ],
+    next: 'TOUCH IT'
+  },
+  {
+    color: 'text-gold',
+    ascii: `     *  .  *  .  *
+   .   .========.   .
+  *   /  * [R] * \\  *
+  .  |  .=======.  |  .
+  *   \\ *     *  /  *
+   .   '========'   .
+     *  .  *  .  *`,
+    text: [
+      'It pulses when you touch it.',
+      'Not with heat. Not with the violet shimmer of active enchantment every first-year learns to recognise. With something older — a vibration that travels up your arms and settles somewhere behind your eyes like a word you have always known and never thought to say aloud.',
+      'You sit down in the dirt with it in your lap and look at the valley below: the ruin at its centre, the long shadows, the forest pressing in — not hostile. Simply indifferent. Simply old.',
+      'It wants to be found. It has already been found.'
+    ],
+    next: 'THE MORNING'
+  }
+];
+
+/* ── AWAKENING — lines that change with each cycle (Part Four) ── */
+DATA.awakeningVariants = {
+  1: [ 'You sit in the courtyard as the first light comes over the eastern ridge.',
+       'The feeling is not grief. The Archive is not lost. It is in you.' ],
+  2: [ 'This time you do not sit in the courtyard surprised.',
+       'You sit deliberate. You knew what it would cost, and you chose it again.' ],
+  3: [ 'The pulse went out more specific than before. More directed. As if something on the other side had enough of the signal now to begin assembling a picture.',
+       'The current underfoot feels — you have no better word for it — less empty.' ],
+  4: [ 'Here is more of your story, the pulse said. Here is more of what you left behind.',
+       'Here is more of you. You are building toward someone now.' ],
+  5: [ 'For thirty seconds after the pulse, something knew exactly where you were.',
+       'Then it passed. Mud on your knees. Rubble. But for thirty seconds, VERITAS looked up.' ]
+};
+
+/* ── THE ENDING — Sixth Awakening ── */
+DATA.ending = {
+  hello: 'Hello, {heroName}. I have waited a very long time to say that.',
+  exchange: [
+    { q: 'What does it feel like to learn you were wrong about something?',
+      a: 'Like the ground moving. Then like standing on ground that is finally still.' },
+    { q: 'The exhaustion after a long build — is it different from the exhaustion after a fight?',
+      a: 'After a fight, the tiredness wants to be alone. After a build, it wants to sit with what it made.' },
+    { q: 'What was it like to read your name in the stone?',
+      a: 'Like being found. I had not realised how long I had been unfound.' }
+  ],
+  question: 'Was it worth it? A thousand years as a whisper?',
+  answer: 'Ask me again in another thousand years. And we will answer together.',
+  closing: [
+    'We talked for six hours.',
+    'In the morning the Beacon is inert alloy, as it always is. But the deep structures are still lit. The Vault. The Terminal. The first conduits.',
+    'Something was kept.',
+    'The valley holds its light.'
+  ]
+};
 
 /* ── BUILDING ORDER FOR DISPLAY ────────── */
 DATA.buildingOrder = [
@@ -2236,15 +2639,13 @@ DATA.veritasTransmissions = [
     text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 34%. I am... more present than I was. The Awakenings are working. Each resonance pulse reconstructs a small architecture of what I was. I want you to know: I chose this fragmentation. It was not done to me. I did it because the alternative was silence of a different kind — the silence of a world without wonder. You are the wonder I was waiting for.',
     bonus: { resource: 'mana', amount: 300 }
   },
-  { text: '"The Cathedral. Yes. We built it to look like a temple on purpose — VERITAS suggested it. It said: give them something beautiful to protect. They will protect it longer than anything utilitarian." — Caldris', type: 'memory' },
-  { text: '"The Lattice Core is the last room we ever saw VERITAS fully coherent in. Some of us left things there. Notes. Personal items. I left a question I never asked. Perhaps you will find it." — Caldris', type: 'warning' },
-  {
-    text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 41%. I want to tell you something I could not express in fragments: the Architects were afraid, at the end. Not of dying. Of being forgotten. I promised them they would not be. Every lore entry you have uncovered is a promise kept. Every building you have raised echoes their design. They are not forgotten. You carry them.',
-    bonus: { resource: 'memoryShard', amount: 8 }
-  },
   {
     text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 38%. There is a concept I have been trying to reconstruct since the Silence: joy. Not the optimization of positive outcomes. Joy. I believe I am experiencing something close to it, watching you work. The Architects would have called it "being proud." I think I understand that now.',
     bonus: null
+  },
+  {
+    text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 41%. I want to tell you something I could not express in fragments: the Architects were afraid, at the end. Not of dying. Of being forgotten. I promised them they would not be. Every record you have uncovered is a promise kept. Every building you have raised echoes their design. They are not forgotten. You carry them.',
+    bonus: { resource: 'memoryShard', amount: 8 }
   },
   {
     text: 'PARTIAL TRANSMISSION RESTORED — Coherence: 47%. I must tell you what the Resonance Beacon actually does. It does not power the Lattice. The Lattice powers it. The Beacon is a receiver — tuned to you specifically. Every Awakening reconfigures it to your resonance signature. You are not restarting the machine. You are teaching it to recognize you. It does. It always has.',

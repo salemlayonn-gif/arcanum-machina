@@ -22,21 +22,41 @@ var Engine = {
     var now = Date.now();
     var dt  = (now - Engine.lastTick) / 1000;
     Engine.lastTick = now;
-    if (dt > 5) dt = 5; // clamp large gaps
+    if (dt > 60) dt = 60; // clamp very large gaps (a throttled background tab still earns its minute)
 
     G.playTime += dt;
 
     Engine.checkBuildingCapEffects();
     Engine.produceResources(dt);
+
+    /* During an Awakening or the ending, the world holds its breath */
+    if (G.awakening || G.ending) {
+      Prestige.tick(now);
+      RENDER.markDirty();
+      return;
+    }
+
     Engine.checkCrafting(now);
     Engine.checkExplore(now);
     Engine.checkCombatTurn(now);
     Engine.checkLoreUnlocks();
+    Engine.checkDecoding(dt);
     Engine.checkFlagUnlocks();
     Engine.checkAnnotations();
     Engine.checkHeroRegen(dt);
     Engine.checkVeritasHints();
     Engine.checkVeritasTransmission();
+    Engine.checkRepeater(now);
+  },
+
+  /* The Signal Repeater still pulses every 3.7 seconds toward a receiver that no longer exists. Old habits. */
+  _lastPulse: 0,
+  checkRepeater: function(now) {
+    if (G.ui.screen !== 'relics') return;
+    if ((G.relics || []).indexOf('signalRepeater') === -1) return;
+    if (now - Engine._lastPulse < 3700) return;
+    Engine._lastPulse = now;
+    if (typeof Sounds !== 'undefined') Sounds.repeaterPulse();
   },
 
   produceResources: function(dt) {
@@ -54,14 +74,13 @@ var Engine = {
   },
 
   checkBuildingCapEffects: function() {
-    /* Recompute caps from buildings each tick */
-    var manaCap  = 200;
-    var scrapCap = 30;
-    manaCap  += (G.buildings.manaConduit  || 0) * 50;
-    manaCap  += (G.buildings.leyTap       || 0) * 200;
-    scrapCap += (G.buildings.scrapDepot   || 0) * 25;
-    G.resCap.mana  = manaCap;
-    G.resCap.scrap = scrapCap;
+    /* Recompute caps from buildings each tick — the Archive's capacitors grow with it */
+    var b = G.buildings;
+    G.resCap.mana        = 200 + (b.manaConduit || 0) * 50 + (b.leyTap || 0) * 300;
+    G.resCap.scrap       = 30  + (b.scrapDepot  || 0) * 25;
+    G.resCap.arcaneCore  = 20  + (b.ancientWorkshop || 0) * 40 + (b.golemForge || 0) * 120;
+    G.resCap.memoryShard = 15  + (b.memoryTerminal  || 0) * 6;
+    G.resCap.etherCell   = 20  + (b.golemForge      || 0) * 40;
   },
 
   checkHeroRegen: function(dt) {
@@ -92,14 +111,14 @@ var Engine = {
 
     if (recipe.output.resource) {
       resAdd(recipe.output.resource, recipe.output.amount);
-      addLog('Crafted: ' + recipe.name + ' x' + recipe.output.amount, 'log-loot');
+      addLog('The bench goes quiet. ' + recipe.name + ' ×' + recipe.output.amount + '.', 'log-loot');
       if (recipe.output.resource === 'arcaneCore') G.stats.coresCrafted += recipe.output.amount;
     } else if (recipe.output.equipment) {
       var eqId = recipe.output.equipment;
       G.inventory.push(eqId);
       G.stats.itemsCrafted++;
-      addLog('Crafted: ' + DATA.equipment[eqId].name, 'log-loot');
-      showNotification('Item crafted: ' + DATA.equipment[eqId].name, 'notif-loot');
+      addLog('The bench goes quiet. ' + DATA.equipment[eqId].name + ' is finished.', 'log-loot');
+      showNotification(DATA.equipment[eqId].name + ' — finished', 'notif-loot');
     }
   },
 
@@ -123,7 +142,7 @@ var Engine = {
           if ((G.relics || []).indexOf('latticeFragment') !== -1) amt++;
         }
         resAdd(entry.id, amt);
-        gained.push(fmt(amt) + ' ' + entry.id);
+        gained.push(fmt(amt) + ' ' + resName(entry.id));
       }
     });
 
@@ -136,12 +155,12 @@ var Engine = {
           G.relicsNew.push(entry.id);
           var relic = DATA.relics[entry.id];
           if (relic) {
-            addLog('◆ RELIC FOUND: ' + relic.name + '!', 'log-loot');
-            showNotification('◆ Relic: ' + relic.name, 'notif-loot', 8100);
+            addLog('◆ Your boot catches on something in the soil. ' + relic.name + '.', 'log-loot');
+            showNotification('◆ ' + relic.name, 'notif-loot', 8100);
             if (typeof Sounds !== 'undefined') Sounds.relicFound();
             if (!G.flags.relicsVisible) {
               G.flags.relicsVisible = true;
-              addLog('Relics tab unlocked.', 'log-important');
+              addLog('The first thing that was carried, not built. You clear a shelf for it.', 'log-important');
             }
           }
         }
@@ -150,14 +169,26 @@ var Engine = {
 
     G.explore.runsCompleted++;
     G.stats.exploreRuns++;
-    if ((G.explore.visited || []).indexOf(G.explore.zoneId) === -1) {
-      G.explore.visited.push(G.explore.zoneId);
-    }
+    var zid = G.explore.zoneId;
+    var firstVisit = (G.explore.visited || []).indexOf(zid) === -1;
+    if (firstVisit) G.explore.visited.push(zid);
+    if (!G.explore.zoneRuns) G.explore.zoneRuns = {};
+    G.explore.zoneRuns[zid] = (G.explore.zoneRuns[zid] || 0) + 1;
     G.explore.active = false;
     if (G.buffs) G.buffs.exploreSpeedBonus = 0;
+    if (typeof Music !== 'undefined') Music.autoRestore();
 
-    var msg = 'Explored ' + zone.name + '.';
-    if (gained.length) msg += ' Found: ' + gained.join(', ') + '.';
+    /* Seeded moment: the shard positioned where the runoff keeps it findable (Ch. 14) */
+    if (zid === 'ruined_outpost' && G.prestige.count === 0 && !G.seeds.outpostShard && G.explore.zoneRuns[zid] >= 2) {
+      G.seeds.outpostShard = true;
+      resAdd('memoryShard', 1);
+      gained.push('1 Shard');
+      addLog('A cavity in the south wall, where the water runs off the roof. Something crystalline inside, kept damp, kept readable.', 'log-lore');
+    }
+
+    var msg = firstVisit ? 'You reach ' + zone.name + ' and mark it on the map.' : 'Back from ' + zone.name + '.';
+    if (gained.length) msg += ' Recovered: ' + gained.join(', ') + '.';
+    else msg += ' Nothing this time.';
     addLog(msg, 'log-loot');
   },
 
@@ -174,15 +205,60 @@ var Engine = {
       if (G.loreUnlocked.indexOf(entry.id) !== -1) return;
       if (entry.unlockCondition(G)) {
         G.loreUnlocked.push(entry.id);
-        G.loreNew.push(entry.id);
-        addLog('New lore entry: ' + entry.title, 'log-lore');
-        showNotification('◆ New Record: ' + entry.title, 'notif-lore', 8100);
-        if (typeof Sounds !== 'undefined') Sounds.loreUnlocked();
-        if (!G.flags.loreVisible) {
-          G.flags.loreVisible = true;
+        if (!G.flags.loreVisible) G.flags.loreVisible = true;
+        if (entry.decode) {
+          /* A Shard: recovered, not yet read. The Terminal has to decode it, layer by layer. */
+          G.decoding[entry.id] = { done: 0, progress: 0, complete: false };
+          G.loreNew.push(entry.id);
+          addLog('Shard recovered: ' + entry.title + '. It will need the Terminal.', 'log-lore');
+          showNotification('◆ Shard recovered — ' + entry.title, 'notif-lore', 7000);
+        } else {
+          G.loreNew.push(entry.id);
+          addLog('Recorded: ' + entry.title, 'log-lore');
+          showNotification('◆ ' + entry.title, 'notif-lore', 7000);
+          if (typeof Sounds !== 'undefined') Sounds.loreUnlocked();
         }
       }
     });
+  },
+
+  /* Advance every shard currently on the Terminal by `seconds`. Returns segments completed. */
+  advanceDecoding: function(seconds, quiet) {
+    if (getBuildingCount('memoryTerminal') < 1) return 0;
+    var completedSegments = 0;
+    var per = decodeSegmentSeconds();
+    for (var id in G.decoding) {
+      var d = G.decoding[id];
+      if (!d || d.complete) continue;
+      var entry = getLoreEntry(id);
+      if (!entry) { d.complete = true; continue; }
+      var segs = loreSegments(entry).length;
+      d.progress += seconds / per;
+      while (d.progress >= 1 && d.done < segs) {
+        d.progress -= 1;
+        d.done++;
+        completedSegments++;
+        if (!quiet) {
+          if (typeof Sounds !== 'undefined') Sounds.decodeTick();
+          if (d.done < segs) addLog('Terminal: segment ' + d.done + ' of ' + segs + ' — ' + entry.title, 'log-lore');
+        }
+      }
+      if (d.done >= segs) {
+        d.complete = true;
+        d.progress = 0;
+        if (G.loreNew.indexOf(id) === -1) G.loreNew.push(id);
+        addLog('Decode complete: ' + entry.title, 'log-lore');
+        if (!quiet) {
+          showNotification('◆ Decoded — ' + entry.title, 'notif-lore', 8100);
+          if (typeof Sounds !== 'undefined') Sounds.loreUnlocked();
+        }
+      }
+    }
+    return completedSegments;
+  },
+
+  checkDecoding: function(dt) {
+    Engine.advanceDecoding(dt, false);
   },
 
   checkAnnotations: function() {
@@ -191,8 +267,7 @@ var Engine = {
       if (ann.condition(G)) {
         G.annotations.push(ann.id);
         G.annotationsNew.push(ann.id);
-        addLog('Annotation: ' + ann.title, 'log-lore');
-        showNotification('◆ ' + ann.title, 'notif-lore');
+        addLog('Margin note: ' + ann.title, 'log-lore');
         if (!G.flags.codexVisible) {
           G.flags.codexVisible = true;
         }
@@ -205,13 +280,15 @@ var Engine = {
     if (!G.veritasHint) G.veritasHint = { lastTime: 0, count: 0 };
     if (G.playTime - G.veritasHint.lastTime < 180) return;
     G.veritasHint.lastTime = G.playTime;
-    G.veritasHint.count++;
     var hints = DATA.veritasHints;
     var hint = hints[G.veritasHint.count % hints.length];
+    G.veritasHint.count++;
     addLog('[VERITAS]: ' + hint.text, 'log-lore');
     if (hint.bonus) {
+      var before = G.res[hint.bonus.resource] || 0;
       resAdd(hint.bonus.resource, hint.bonus.amount);
-      addLog('VERITAS transfers: +' + hint.bonus.amount + ' ' + hint.bonus.resource + '.', 'log-loot');
+      var got = Math.floor((G.res[hint.bonus.resource] || 0) - before);
+      if (got > 0) addLog('Something shifts in the capacitors: +' + got + ' ' + resName(hint.bonus.resource) + '.', 'log-loot');
     }
     RENDER.markDirty();
   },
@@ -221,33 +298,35 @@ var Engine = {
     if (!G.veritasTransmission) G.veritasTransmission = { lastTime: 0, count: 0 };
     if (G.playTime - G.veritasTransmission.lastTime < 600) return; // every 10 min
     G.veritasTransmission.lastTime = G.playTime;
-    G.veritasTransmission.count++;
     var transmissions = DATA.veritasTransmissions;
     var t = transmissions[G.veritasTransmission.count % transmissions.length];
+    G.veritasTransmission.count++;
     addLog('[VERITAS — PARTIAL TRANSMISSION]: ' + t.text, 'log-lore');
     if (t.bonus) {
+      var before = G.res[t.bonus.resource] || 0;
       resAdd(t.bonus.resource, t.bonus.amount);
-      addLog('VERITAS transfers: +' + t.bonus.amount + ' ' + t.bonus.resource + '.', 'log-loot');
+      var got = Math.floor((G.res[t.bonus.resource] || 0) - before);
+      if (got > 0) addLog('Something shifts in the capacitors: +' + got + ' ' + resName(t.bonus.resource) + '.', 'log-loot');
     }
-    showNotification('◆ VERITAS Partial Transmission received', 'notif-lore', 6000);
+    showNotification('◆ Partial transmission', 'notif-lore', 6000);
     RENDER.markDirty();
   },
 
   checkFlagUnlocks: function() {
     if ((G.buildings.runicWorkbench || 0) >= 1 && !G.flags.craftingVisible) {
       G.flags.craftingVisible = true;
-      addLog('Runic Workbench operational. Crafting unlocked.', 'log-important');
-      showNotification('Crafting unlocked!', 'notif-unlock');
+      addLog('The workbench channels illuminate. It is waiting for materials.', 'log-important');
+      showNotification('The workbench is waiting.', 'notif-unlock');
     }
     if ((G.buildings.scoutPost || 0) >= 1 && !G.flags.mapVisible) {
       G.flags.mapVisible = true;
-      addLog('Scout Post built. Exploration available.', 'log-important');
-      showNotification('Exploration unlocked!', 'notif-unlock');
+      addLog('The Scout Post is active. Under the moss, in every direction: roads.', 'log-important');
+      showNotification('The Scout Post reads the roads.', 'notif-unlock');
     }
     if ((G.buildings.resonanceBeacon || 0) >= 1 && !G.flags.prestigeVisible) {
       G.flags.prestigeVisible = true;
-      addLog('The Resonance Beacon hums. The Awakening is near.', 'log-lore');
-      showNotification('★ The Awakening is available', 'notif-prestige');
+      addLog('The Beacon hums. You know what it will cost.', 'log-lore');
+      showNotification('★ The Beacon hums.', 'notif-prestige');
     }
     if (!G.flags.heroVisible && G.stats.totalMana >= 20) {
       G.flags.heroVisible = true;
@@ -258,10 +337,26 @@ var Engine = {
 /* ── SCAVENGE ACTION ───────────────────── */
 function doScavenge() {
   if (Date.now() < G.scavenge.cooldownUntil) return;
+  if (G.awakening || G.ending) return;
+  if (!G.seeds.firstCache) {
+    /* The first search finds the cache from Chapter Three: arranged, not fallen */
+    G.seeds.firstCache = true;
+    resAdd('scrap', 6);
+    G.scavenge.cooldownUntil = Date.now() + 30000;
+    addLog('Behind a collapsed section of the lower wall: fragments of pale alloy. Not fallen. Arranged — simplest at the outside, most intricate at the centre. Six pieces. (+6 scrap)', 'log-loot');
+    addLog('Someone left this here for someone to find.', 'log-lore');
+    RENDER.markDirty();
+    return;
+  }
   var gained = 1 + Math.floor(Math.random() * 3); // 1–3 scrap
   resAdd('scrap', gained);
   G.scavenge.cooldownUntil = Date.now() + 30000; // 30s cooldown
-  addLog('Scavenged the ruins. Found ' + gained + ' scrap.', 'log-loot');
+  var lines = [
+    'You work the debris with your hands. ' + gained + ' scrap.',
+    'A bracket, a housing panel, a length of channel-threaded wire. ' + gained + ' scrap.',
+    'Under the silt, more of the pale alloy. It hums faintly against the conduit current. ' + gained + ' scrap.'
+  ];
+  addLog(lines[Math.floor(Math.random() * lines.length)], 'log-loot');
   RENDER.markDirty();
 }
 
@@ -269,18 +364,23 @@ function doScavenge() {
 function buyBuilding(id) {
   var bld = DATA.buildings[id];
   if (!bld) return;
+  if (G.awakening || G.ending) return;
 
   var count = G.buildings[id] || 0;
   if (bld.max && count >= bld.max) return;
 
-  var cost = bld.baseCost(count);
+  var cost = getBuildingCost(id, count);
   if (!canAfford(cost)) return;
 
   spendResources(cost);
   G.buildings[id] = count + 1;
 
-  addLog('Built: ' + bld.name + ' (' + (count + 1) + ')', '');
-  if (count === 0) showNotification('Built: ' + bld.name, 'notif-unlock');
+  if (count === 0) {
+    addLog((bld.built || (bld.name + ' — installed.')), 'log-important');
+    if (bld.flavor) addLog(bld.flavor, 'log-lore');
+  } else {
+    addLog(bld.name + ' ×' + (count + 1) + '.', '');
+  }
   RENDER.markDirty();
 }
 
@@ -297,14 +397,13 @@ function useConsumable(id) {
   if (!item || item.slot !== 'consumable' || !item.effect) return;
   G.inventory.splice(idx, 1);
   item.effect();
-  showNotification('Used: ' + item.name, 'notif-loot');
   RENDER.markDirty();
 }
 
 /* ── MANUAL SAVE ───────────────────────── */
 function manualSave() {
   saveGame();
-  showNotification('Game saved.', '');
+  showNotification('Field notes saved.', '');
 }
 
 /* ── SETTINGS: THEME & FONT ────────────── */
