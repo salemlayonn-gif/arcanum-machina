@@ -1,5 +1,35 @@
 # Arcanum Machina — Dev Log
 
+## Session 2026-09-10 (night) — v1.3.0: animation, music, sound
+
+All 19 items from the second-round list (IMPROVEMENTS.md §4). Architecture first:
+
+- **Mixer** (`sounds.js`): Master / Music / Ambient / Effects + mute, persisted in `am_mix`. CONFIG has the sliders.
+- **Music rewritten** to schedule **bar by bar** (`_scheduleBar`, 1.2 s lookahead) so the score reacts within a
+  bar. Default mode **Adaptive**: `layersFor(G)` — drone always; bass with the first conduit; arp with the bench;
+  sparse drums with the Scout Post; melody with the Workshop; full drums with the Forge or first Awakening; then
+  each Awakening adds a voice (octave, sub-bass, arp a fifth up, brightness). `planFor(G)` overrides by place:
+  District → *The Sunken Archive*; Spire → shimmer voice, no drums; Vault → drone + pulse; Cathedral → organ
+  voice at half tempo; Lattice Core → everything. Combat ducks melody and arp. After the ending: drone, and a
+  two-bar phrase every three minutes. The three fixed songs remain selectable. Drums now go through the master
+  (they used to bypass the volume slider).
+- **Ambient** (`sounds.js`): a bed per place (valley wind + birds after the Scout Post; district water + drips;
+  Spire shimmer; Vault 55 Hz + pulse; Cathedral pad; Core), 1.5 s crossfades, follows `currentPlace()` once a
+  second, pauses when the tab is hidden. Audio unlocks on the first click/key.
+- **Sounds:** building timbres (`Sounds.build`), scavenge, dry combat foley (zap / hit / clank), footsteps on
+  return, shard recovered, bench recognition on the first craft, toast tick, relic pulse, the **Care Golem's
+  "sound that means the conversation is over"**, and the **VERITAS motif** (descending fifth on every VERITAS
+  line; in full at "Hello").
+- **Animation:** the lit sockets breathe and the ley lines wave (CSS, staggered); **the relic pulses once**
+  at random (45–160 s), with a log line and a sub-bass thump; decoded segments **type themselves in** at
+  40 chars/s; the title **surfaces** from `▒░▓` noise bottom-up; zone/enemy art is alive (water, sparks,
+  wraiths, the Care Golem's eyes go `@ @` after it strikes); a newly reachable zone flickers on the map for six
+  seconds; the explore bar is a figure walking the road (`☾` after 21:00); the Awakening shows a `▁▂▃▅▇` bar
+  rising with the chord. `prefers-reduced-motion` disables all of it.
+- Harness section J covers the mixer, the adaptive planner and the animation helpers.
+
+---
+
 ## Session 2026-09-10 (latest) — v1.2.0: the last three open items
 
 - **Move slowly / hold still.** Care Golems and Protocol Drones are `calmable`; a combat button plays a

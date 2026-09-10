@@ -10,7 +10,7 @@ global.window = global;
 global.document = { getElementById: () => null, addEventListener(){}, activeElement: null, documentElement:{style:{},setAttribute(){},removeAttribute(){}} };
 global.localStorage = { getItem: k => (k in store ? store[k] : null), setItem(k,v){ store[k]=String(v); } };
 global.location = { reload(){} };
-for (const f of ['data.js','state.js','engine.js','combat.js','exploration.js','prestige.js','render.js']) vm.runInThisContext(fs.readFileSync(dir+f,'utf8'), {filename:f});
+for (const f of ['data.js','state.js','engine.js','combat.js','exploration.js','prestige.js','render.js','music.js','sounds.js']) vm.runInThisContext(fs.readFileSync(dir+f,'utf8'), {filename:f});
 let fails = 0; function assert(c, msg){ console.log((c?'  ok   ':'  FAIL ')+msg); if(!c) fails++; }
 const strip = s => s.replace(/<[^>]+>/g,'');
 
@@ -116,7 +116,7 @@ let widths = [...new Set(panel.split('\n').slice(1,10).map(l=>l.length))];
 assert(widths.length===1, 'panel frame lines equal width: '+widths.join(','));
 G.buildings.scoutPost=1; G.explore.visited=[]; G.stats.enemiesDefeated=0;
 let map = strip(RENDER.worldMap());
-assert(map.indexOf('? ? ? ? ?')!==-1 && map.indexOf('OVERGROWN ROAD')===-1 && map.indexOf('LATTICE CORE')===-1, 'fog: road unknown, core hidden');
+assert((map.indexOf('? ? ? ? ?')!==-1 || map.indexOf('▒ ? ▒ ? ▒')!==-1) && map.indexOf('OVERGROWN ROAD')===-1 && map.indexOf('LATTICE CORE')===-1, 'fog: road unknown (or freshly read), core hidden');
 G.explore.visited=['overgrown_road']; map = strip(RENDER.worldMap());
 assert(map.indexOf('OVERGROWN ROAD')!==-1, 'visited road named');
 let mw=[...new Set(map.split('\n').map(l=>l.length))]; assert(mw.length===1, 'map lines equal width: '+mw.join(','));
@@ -126,6 +126,35 @@ G.seeds={wolfStare:true}; G.decoding={memory_shard_first:{done:2,progress:0.5,co
 saveGame(); G.seeds={}; G.decoding={}; G.explore.zoneRuns={};
 assert(loadGame() && G.seeds.wolfStare && G.decoding.memory_shard_first.done===2 && G.explore.zoneRuns.sunken_district===3, 'persisted fields');
 assert(G.heroName==='xSal', 'hero name sanitised: '+G.heroName);
+
+console.log('J. mixer, adaptive score, animation helpers');
+Mixer.set('music', 0.2); Mixer.levels.music = 0.9; Mixer.load();
+assert(Math.abs(Mixer.levels.music - 0.2) < 1e-9, 'mixer level persists via localStorage');
+Mixer.toggleMute(); assert(Mixer.gain('sfx') === 0, 'mute zeroes every bus'); Mixer.toggleMute();
+G.buildings = {}; G.prestige.count = 0; G.combat.active = false; G.explore.active = false; G.flags.ended = false; G.awakening = null; G.ending = null;
+let L = Music.layersFor(G); assert(L.drone && !L.bass && !L.melody && L.drums === 'none', 'prologue: drone only');
+G.buildings = { manaConduit: 1, runicWorkbench: 1, scoutPost: 1 }; L = Music.layersFor(G);
+assert(L.bass && L.arp && L.drums === 'sparse' && !L.melody, 'conduit+bench+scout: bass, arp, sparse drums');
+G.buildings.ancientWorkshop = 1; G.prestige.count = 3; L = Music.layersFor(G);
+assert(L.melody && L.melodyOctave && L.subBass && L.arpFifth && L.drums === 'full', 'workshop + prestige 3: full stack');
+Music.mode = 'adaptive';
+G.explore.active = true; G.explore.zoneId = 'shattered_spire'; let P = Music.planFor(G);
+assert(P.voice === 'shimmer' && P.layers.drums === 'none', 'spire: shimmer voice, no drums');
+G.explore.zoneId = 'cathedral_of_first_light'; P = Music.planFor(G); assert(P.voice === 'organ' && P.bpmMult === 0.5, 'cathedral: organ at half tempo');
+G.explore.zoneId = 'deep_vault'; P = Music.planFor(G); assert(!P.layers.melody && P.layers.drums === 'pulse', 'vault: drone and pulse only');
+G.explore.zoneId = 'sunken_district'; P = Music.planFor(G); assert(P.song.name === 'The Sunken Archive', 'district: the Sunken Archive');
+G.explore.active = false; G.combat.active = true; G.combat.zoneId = 'overgrown_road'; G.combat.script = null; P = Music.planFor(G);
+assert(!P.layers.melody && !P.layers.arp && P.layers.bass, 'combat ducks melody and arp, keeps bass');
+G.combat.active = false; Music.mode = 1; P = Music.planFor(G); assert(P.song.name === 'The Sunken Archive' && P.layers.melody, 'fixed song mode ignores state'); Music.mode = 'adaptive';
+G.flags.ended = true; P = Music.planFor(G); assert(P.layers.drone && P.layers.drums === 'none', 'after the ending: drone, no drums'); G.flags.ended = false;
+let art = RENDER.liveArt(DATA.zones.sunken_district.ascii, 'sunken_district'); assert(art.length === DATA.zones.sunken_district.ascii.length, 'live art keeps its width');
+assert(RENDER.roadProgress(50).indexOf('o') !== -1, 'road figure present');
+G.awakening = { start: Date.now() - 3000, mode: 'blaze' }; assert(strip(RENDER.chordBar(G.awakening)).length === 30, 'chord bar 30 blocks at full level'); G.awakening = null;
+let e0001 = getLoreEntry('memory_shard_first');
+let typed = RENDER.typedSegments(e0001, 2, Date.now() - 100); assert(typed.indexOf('type-cursor') !== -1, 'recent segment is still typing');
+typed = RENDER.typedSegments(e0001, 2, Date.now() - 60000); assert(typed.indexOf('type-cursor') === -1, 'old segment fully shown');
+G.buildings = {}; G.relicFlashAt = Date.now(); assert(strip(RENDER.archivePanel({})).indexOf('◉') !== -1, 'relic flash renders'); G.relicFlashAt = 0;
+G.nextRelicPulse = Date.now() - 1; G.gameLog = []; Engine.checkRelicPulse(Date.now()); assert(G.gameLog[0] && G.gameLog[0].msg.indexOf('relic pulses') !== -1 && G.nextRelicPulse > Date.now() + 50000, 'relic pulse logs and reschedules');
 
 console.log('I. content sanity');
 assert(DATA.veritasTransmissions.every(t=>t.text.startsWith('PARTIAL')), 'no Caldris in transmissions');

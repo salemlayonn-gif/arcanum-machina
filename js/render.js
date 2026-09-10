@@ -422,7 +422,7 @@ var RENDER = {
       html += '<div class="zone-row">';
       if (zone.ascii) {
         html += '<div class="zone-layout">';
-        html += '<pre class="zone-art ' + (visited ? (zone.asciiColor || 'text-dim') : 'text-dim zone-art-unknown') + '">' + (visited ? zone.ascii : '?  ?  ?\n ?  ?  ?\n  ???  \n ?  ?  ?') + '</pre>';
+        html += '<pre class="zone-art ' + (visited ? (zone.asciiColor || 'text-dim') : 'text-dim zone-art-unknown') + '">' + (visited ? RENDER.liveArt(zone.ascii, zid) : '?  ?  ?\n ?  ?  ?\n  ???  \n ?  ?  ?') + '</pre>';
         html += '<div class="zone-info">';
       }
       if (visited) {
@@ -441,7 +441,7 @@ var RENDER = {
         var left = formatTime(Exploration.getExploreTimeLeft() / 1000);
         html += '<div class="explore-status">' +
                 '<div class="explore-label">ON THE ROAD — ' + (visited ? zone.name.toUpperCase() : '? ? ?') + '</div>' +
-                '<div class="progress-wrap"><div class="progress-bar" style="max-width:200px;"><div class="progress-fill explore-fill" style="width:' + pct + '%"></div></div>' +
+                '<div class="progress-wrap">' + RENDER.roadProgress(pct) +
                 '<span class="text-dim">' + left + '</span></div>' +
                 '<button class="btn" style="margin-top:6px;font-size:0.79rem;" onclick="Exploration.cancelExplore()">[TURN BACK]</button>' +
                 '</div>';
@@ -520,8 +520,8 @@ var RENDER = {
       var enemyHpPct = Combat.hpPct(G.combat.enemyHp, G.combat.enemyMaxHp);
       var enemyHpCls = Combat.getHpClass(G.combat.enemyHp, G.combat.enemyMaxHp);
       html += '<div class="combatant">' +
-        '<pre class="ascii-art ' + (enemy.color || 'enemy-art') + '">' + enemy.ascii + '</pre>' +
-        (enemy.backdrop ? '<pre class="ascii-art combat-backdrop">' + enemy.backdrop + '</pre>' : '') +
+        '<pre class="ascii-art ' + (enemy.color || 'enemy-art') + '">' + RENDER.liveArt(enemy.ascii, enemy.id) + '</pre>' +
+        (enemy.backdrop ? '<pre class="ascii-art combat-backdrop">' + RENDER.liveArt(enemy.backdrop, 'backdrop') + '</pre>' : '') +
         '<div class="combatant-name">' + enemy.name + '</div>';
       if (enemy.noncombat) {
         html += '<div class="text-dim" style="font-size:0.82rem;">sensors steady · not running down</div>';
@@ -620,13 +620,13 @@ var RENDER = {
           '<div class="lore-title">' + entry.title + (decoded ? '' : ' <span class="decode-tag">[ON THE TERMINAL]</span>') + '</div>' +
           '<div class="lore-chapter">' + entry.chapter + '</div>' +
           (entry.ascii ? '<pre class="ascii-art lore-art ' + (entry.asciiColor || '') + '">' + entry.ascii + '</pre>' : '');
+        var dd = G.decoding[loreId];
         if (decoded) {
-          html += '<div class="lore-text">' + escapeHtml(loreText(entry.text)) + '</div>';
+          html += '<div class="lore-text">' + (dd && dd.lastDoneAt ? RENDER.typedSegments(entry, loreSegments(entry).length, dd.lastDoneAt) : escapeHtml(loreText(entry.text))) + '</div>';
         } else {
           var segs = loreSegments(entry);
-          var d = G.decoding[loreId] || { done: 0, progress: 0 };
-          var shown = segs.slice(0, d.done).map(function(s) { return escapeHtml(loreText(s)); }).join('<br><br>');
-          html += '<div class="lore-text">' + shown + '</div>';
+          var d = dd || { done: 0, progress: 0 };
+          html += '<div class="lore-text">' + RENDER.typedSegments(entry, d.done, d.lastDoneAt) + '</div>';
           if (!hasTerminal) {
             html += '<div class="decode-line text-red">[ SHARD RECOVERED — NO TERMINAL TO READ IT ]</div>';
             html += '<div class="decode-corrupt" style="font-style:italic;">It is trying to tell you something. You do not yet have the ears for it. Build a Memory Terminal.</div>';
@@ -648,6 +648,19 @@ var RENDER = {
 
     html += '</div>';
     return html;
+  },
+
+  /* The first `done` segments of an entry; the most recent one types itself in at ~40 chars/s */
+  typedSegments: function(entry, done, lastDoneAt) {
+    var segs = loreSegments(entry).slice(0, done).map(function(s) { return loreText(s); });
+    if (!segs.length) return '';
+    var elapsed = lastDoneAt ? (Date.now() - lastDoneAt) : Infinity;
+    var last = segs[segs.length - 1];
+    var chars = reducedMotion() ? last.length : Math.floor(elapsed / 25);
+    var typing = chars < last.length;
+    var head = segs.slice(0, -1).map(escapeHtml).join('<br><br>');
+    var tail = escapeHtml(typing ? last.slice(0, chars) : last) + (typing ? '<span class="type-cursor">▌</span>' : '');
+    return head ? head + '<br><br>' + tail : tail;
   },
 
   /* ── HERO SCREEN ─────────────────────── */
@@ -933,30 +946,42 @@ var RENDER = {
     html += '<div style="color:var(--dim);font-size:0.8em;margin-top:6px;">Range: 11px – 30px. Current: ' + Settings.fontSize + 'px.</div>';
     html += '</div>';
 
-    // ── About ──
+    // ── Sound ──
+    html += '<div class="config-section">';
+    html += '<div class="section-header">── SOUND ───────────────────────────────────────</div>';
+    html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:8px;">';
+    html += '<button class="' + (Mixer.muted ? 'btn btn-danger' : 'btn') + '" onclick="Mixer.toggleMute()">' + (Mixer.muted ? '[MUTED — UNMUTE]' : '[MUTE ALL]') + '</button>';
+    html += '<span class="text-dim" style="font-size:0.82rem;">Everything is generated as you play. Nothing is loaded.</span>';
+    html += '</div>';
+    [['master', 'Master'], ['music', 'Music'], ['ambient', 'Ambient'], ['sfx', 'Effects']].forEach(function(b) {
+      var v = Mixer.levels[b[0]];
+      html += '<div class="mix-row"><label>' + b[1] + '</label>' +
+        '<input type="range" min="0" max="1" step="0.05" value="' + v.toFixed(2) + '" oninput="Mixer.set(\'' + b[0] + '\', parseFloat(this.value)); this.nextElementSibling.textContent = Math.round(this.value*100) + \'%\';">' +
+        '<span class="mix-val">' + Math.round(v * 100) + '%</span></div>';
+    });
+    html += '<div class="text-dim" style="font-size:0.79rem;margin-top:6px;">Ambient follows where you are: the valley, the drowned streets, the Spire, the Vault.</div>';
+    html += '</div>';
+
+    // ── Music ──
     html += '<div class="config-section">';
     html += '<div class="section-header">── MUSIC ───────────────────────────────────────</div>';
     var musicBtnLabel = Music.playing ? '[■ STOP MUSIC]' : '[▶ PLAY MUSIC]';
     var musicBtnClass = Music.playing ? 'btn btn-danger' : 'btn btn-mana';
     html += '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">';
     html += '<button class="' + musicBtnClass + '" onclick="Music.toggle()">' + musicBtnLabel + '</button>';
-    html += '<div style="display:flex;align-items:center;gap:8px;">';
-    html += '<span class="text-dim" style="font-size:0.86rem;">Volume</span>';
-    html += '<input type="range" min="0" max="1" step="0.05" value="' + Music.volume.toFixed(2) + '" style="width:100px;cursor:pointer;" oninput="Music.setVolume(parseFloat(this.value))">';
-    html += '<span class="text-dim" style="font-size:0.79rem;min-width:32px;">' + Math.round(Music.volume * 100) + '%</span>';
-    html += '</div></div>';
-    // Track selector
-    html += '<div class="section-header" style="margin-top:14px;">── MUSIC TRACK ─────────────────────────────────</div>';
+    html += '</div>';
+    html += '<div class="section-header" style="margin-top:14px;">── SCORE ───────────────────────────────────────</div>';
     html += '<div class="track-selector">';
     var songDescs = [
+      'one track that grows with the Archive · changes with the place · ducks in a fight',
       'A minor · 70 BPM · mysterious to epic',
       'E minor · 55 BPM · haunting and melancholic',
       'G minor · 88 BPM · mechanical and urgent'
     ];
     Music.getSongs().forEach(function(name, i) {
-      var active = Music.currentSong === i;
-      var cls = active ? 'btn btn-mana track-btn track-active' : 'btn track-btn';
-      html += '<div class="track-row' + (active ? ' track-row-active' : '') + '" onclick="Music.setSong(' + i + ')">';
+      var idx = i - 1; // -1 = adaptive
+      var active = Music.currentSong === idx;
+      html += '<div class="track-row' + (active ? ' track-row-active' : '') + '" onclick="Music.setSong(' + idx + ')">';
       html += '<span class="track-marker">' + (active ? '◆' : '·') + '</span>';
       html += '<span class="track-name">' + name + '</span>';
       html += '<span class="track-desc">' + songDescs[i] + '</span>';
@@ -1055,7 +1080,8 @@ var RENDER = {
     var bench = box(b.runicWorkbench, 'BENCH');
     var scout = box(b.scoutPost, 'SCOUT');
     var beacon = b.resonanceBeacon && rooms;
-    var mid = [beacon ? '[ ★ ]' : '[ ⊙ ]', beacon ? 'beacon' : 'relic', '     '];
+    var flash = !beacon && (Date.now() - (G.relicFlashAt || 0)) < 450;
+    var mid = [beacon ? '[ ★ ]' : (flash ? '[ ◉ ]' : '[ ⊙ ]'), beacon ? 'beacon' : 'relic', '     '];
     for (var r = 0; r < 3; r++) {
       lines.push(row('  ' + bench[r] + rep(' ', 8) + padC(mid[r], 5) + rep(' ', 9) + scout[r] + '  '));
     }
@@ -1085,18 +1111,22 @@ var RENDER = {
     var cLit   = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : 'pnl-lit');
     var cFrame = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : (mode === 'ruin' ? 'pnl-ruin' : 'pnl-frame'));
     var cRoom  = mode === 'blaze' ? 'pnl-gold' : (mode === 'cool' ? 'pnl-cool' : 'pnl-room');
-    function sp(cls, s) { return '<span class="' + cls + '">' + s + '</span>'; }
+    function sp(cls, s, style) { return '<span class="' + cls + '"' + (style ? ' style="' + style + '"' : '') + '>' + s + '</span>'; }
+    var breathing = mode === 'normal' && !reducedMotion();
+    var litIdx = 0, leyIdx = 0;
+    var cLey = (mode === 'normal' && rooms) ? 'pnl-ley' : 'pnl-dim';
     function colour(s) {
       return s
         .replace(/\{([^}]*)\}/g, function(m, inner) { return sp('pnl-dim', inner); })
         .replace(/[╔╗╚╝║═╠╣]/g, function(m) { return sp(cFrame, m); })
         .replace(/[┌┐└┘│─]/g, function(m) { return sp(cRoom, m); })
-        .replace(/~/g, sp(cLit, '~'))
+        .replace(/~/g, function() { return sp(cLit, '~', breathing ? 'animation-delay:-' + ((litIdx++ * 0.7) % 4.2).toFixed(2) + 's' : ''); })
         .replace(/·/g, sp('pnl-dim', '·'))
         .replace(/⊙/g, sp('pnl-gold', '⊙'))
+        .replace(/◉/g, sp('pnl-flash', '◉'))
         .replace(/★/g, sp('pnl-res', '★'))
         .replace(/◈/g, sp(cLit, '◈'))
-        .replace(/≋/g, sp('pnl-dim', '≋'))
+        .replace(/≋/g, function() { return sp(cLey, '≋', breathing ? 'animation-delay:-' + ((leyIdx++ * 0.45) % 6).toFixed(2) + 's' : ''); })
         .replace(/†/g, sp('pnl-tech', '†'))
         .replace(/✓/g, sp(cRoom, '✓'));
     }
@@ -1117,10 +1147,17 @@ var RENDER = {
       return 'l';
     }
     var visitedLabels = [];
+    var now = Date.now(), frame = Math.floor(now / 300);
+    if (!RENDER._zoneSeen) RENDER._zoneSeen = {};
     function lab(id) {
       var s = state(id);
       if (s === 'v') { visitedLabels.push(DATA.zones[id].mapLabel); return padC(DATA.zones[id].mapLabel, 20); }
-      if (s === 'u') return padC('? ? ? ? ?', 20);
+      if (s === 'u') {
+        /* The Scout Post reads something: a newly reachable place flickers for a few seconds */
+        if (!RENDER._zoneSeen[id]) RENDER._zoneSeen[id] = now;
+        var fresh = (now - RENDER._zoneSeen[id]) < 6000 && !reducedMotion();
+        return padC(fresh && (frame % 2) ? '▒ ? ▒ ? ▒' : '? ? ? ? ?', 20);
+      }
       return padC('▓▓▓▓▓▓▓▓▓▓▓▓', 20);
     }
     function side(id, k) { return state(id) === 'l' ? '   ' : DATA.mapSides[id][k]; }
@@ -1160,6 +1197,7 @@ var RENDER = {
     ];
     var out = lines.join('\n');
     out = out.replace(/\? \? \? \? \?/g, '<span class="text-dim" style="opacity:.8">? ? ? ? ?</span>')
+             .replace(/▒ \? ▒ \? ▒/g, '<span class="text-memory" style="opacity:.8">▒ ? ▒ ? ▒</span>')
              .replace(/▓{12}/g, '<span style="opacity:.35">▓▓▓▓▓▓▓▓▓▓▓▓</span>')
              .replace(/★ THE ARCHIVE/g, '<span class="text-gold">★ THE ARCHIVE</span>');
     visitedLabels.forEach(function(l) {
@@ -1175,6 +1213,7 @@ var RENDER = {
     var html = '<div class="section awakening-screen">';
     html += '<div class="section-header">── THE AWAKENING — ' + lvl.name.toUpperCase() + ' ─────────────</div>';
     html += RENDER.archivePanel({});
+    html += RENDER.chordBar(a);
     html += '<div class="awakening-lines">';
     a.lines.forEach(function(l) { html += '<div class="awakening-line">' + escapeHtml(l) + '</div>'; });
     html += '</div>';
@@ -1183,6 +1222,52 @@ var RENDER = {
     }
     html += '</div>';
     return html;
+  },
+
+  /* The chord, visible: a bar that rises with the audio envelope while the valley sings */
+  chordBar: function(a) {
+    if (!a) return '';
+    var t = (Date.now() - a.start) / 1000;
+    var level = t < 1.6 ? t / 1.6 : (t < 8 ? 1 : (t < 9.8 ? 1 - (t - 8) / 1.8 : 0));
+    if (level <= 0.02) return '';
+    var blocks = '▁▂▃▄▅▆▇█', out = '';
+    for (var i = 0; i < 30; i++) {
+      var h = level * (0.55 + 0.45 * Math.sin(i * 0.7 + t * 5));
+      out += blocks[Math.max(0, Math.min(7, Math.round(h * 7)))];
+    }
+    return '<div class="chord-bar ' + (a.mode === 'cool' ? 'pnl-cool' : 'pnl-gold') + '">' + out + '</div>';
+  },
+
+  /* Zone and enemy art with a little life in it (water, sparks, wraiths, eyes) */
+  liveArt: function(str, key) {
+    if (!str || reducedMotion()) return str;
+    var frame = Math.floor(Date.now() / 300);
+    var out = str;
+    if (key === 'sunken_district' || key === 'care_golem' || key === 'protocol_drone' || key === 'backdrop' || key === 'district_arrival') {
+      if (frame % 2) { var w = 0; out = out.replace(/≈/g, function() { return (w++ % 2) ? '~' : '≈'; }); }
+      else           { var w2 = 0; out = out.replace(/≈/g, function() { return (w2++ % 2) ? '≈' : '~'; }); }
+    }
+    if (key === 'ruined_outpost') {
+      if (frame % 3 === 0) out = out.replace(/[*·]/g, function(m) { return m === '*' ? '·' : '*'; });
+    }
+    if (key === 'shattered_spire' || key === 'mana_wraith' || key === 'spire_chantor') {
+      var cyc = ['~', '≈', '≋'][frame % 3];
+      out = out.replace(/~/g, cyc);
+    }
+    if (key === 'care_golem' && G.combat.active && (Date.now() - (G.combat.lastEnemyHitAt || 0)) < 700) {
+      out = out.replace('^ ^', '@ @');
+    }
+    return out;
+  },
+
+  /* The scout on the road: a figure walking the paving; darker after nightfall */
+  roadProgress: function(pct) {
+    var len = 26, pos = Math.min(len - 1, Math.floor((pct / 100) * len));
+    var s = '';
+    for (var i = 0; i < len; i++) s += (i === pos) ? 'o' : ((i % 2) ? '─' : '·');
+    var hour = new Date().getHours();
+    var night = hour < 6 || hour >= 21;
+    return '<span class="road-line' + (night ? ' road-night' : '') + '">' + (night ? '☾ ' : '  ') + s + '</span>';
   },
 
   /* ── THE ENDING ──────────────────────── */

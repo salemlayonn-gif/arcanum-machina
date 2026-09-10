@@ -28,6 +28,7 @@ var Engine = {
 
     Engine.checkBuildingCapEffects();
     Engine.produceResources(dt);
+    Engine.checkAmbient(now);
 
     /* During an Awakening or the ending, the world holds its breath */
     if (G.awakening || G.ending) {
@@ -47,6 +48,27 @@ var Engine = {
     Engine.checkVeritasHints();
     Engine.checkVeritasTransmission();
     Engine.checkRepeater(now);
+    Engine.checkRelicPulse(now);
+  },
+
+  /* The relic pulses. Once. Never on a schedule you could learn. */
+  checkRelicPulse: function(now) {
+    if ((G.buildings.resonanceBeacon || 0) >= 1) return;
+    if (G.combat.active) return;
+    if (!G.nextRelicPulse) { G.nextRelicPulse = now + 45000 + Math.random() * 75000; return; }
+    if (now < G.nextRelicPulse) return;
+    G.nextRelicPulse = now + 60000 + Math.random() * 100000;
+    G.relicFlashAt = now;
+    addLog('The relic pulses. Once.', 'log-lore');
+    if (typeof Sounds !== 'undefined') Sounds.relicPulse();
+    RENDER.markDirty();
+  },
+
+  _lastAmbient: 0,
+  checkAmbient: function(now) {
+    if (now - Engine._lastAmbient < 1000) return;
+    Engine._lastAmbient = now;
+    if (typeof Ambient !== 'undefined') Ambient.update();
   },
 
   /* The Signal Repeater still pulses every 3.7 seconds toward a receiver that no longer exists. Old habits. */
@@ -109,6 +131,7 @@ var Engine = {
     var recipe = DATA.recipes[slotData.recipeId];
     if (!recipe) return;
 
+    var firstEver = G.stats.coresCrafted === 0 && G.stats.itemsCrafted === 0;
     if (recipe.output.resource) {
       resAdd(recipe.output.resource, recipe.output.amount);
       addLog('The bench goes quiet. ' + recipe.name + ' ×' + recipe.output.amount + '.', 'log-loot');
@@ -120,6 +143,7 @@ var Engine = {
       addLog('The bench goes quiet. ' + DATA.equipment[eqId].name + ' is finished.', 'log-loot');
       showNotification(DATA.equipment[eqId].name + ' — finished', 'notif-loot');
     }
+    if (typeof Sounds !== 'undefined') { if (firstEver) Sounds.recognition(); else Sounds.tick(); }
   },
 
   checkExplore: function(now) {
@@ -177,6 +201,7 @@ var Engine = {
     G.explore.active = false;
     if (G.buffs) G.buffs.exploreSpeedBonus = 0;
     if (typeof Music !== 'undefined') Music.autoRestore();
+    if (typeof Sounds !== 'undefined') Sounds.footsteps();
 
     /* Seeded moment: the shard positioned where the runoff keeps it findable (Ch. 14) */
     if (zid === 'ruined_outpost' && G.prestige.count === 0 && !G.seeds.outpostShard && G.explore.zoneRuns[zid] >= 2) {
@@ -212,6 +237,7 @@ var Engine = {
           G.loreNew.push(entry.id);
           addLog('Shard recovered: ' + entry.title + '. It will need the Terminal.', 'log-lore');
           showNotification('◆ Shard recovered — ' + entry.title, 'notif-lore', 7000);
+          if (typeof Sounds !== 'undefined') Sounds.shardRecovered();
         } else {
           G.loreNew.push(entry.id);
           addLog('Recorded: ' + entry.title, 'log-lore');
@@ -238,6 +264,7 @@ var Engine = {
         d.progress -= 1;
         d.done++;
         completedSegments++;
+        if (!quiet) d.lastDoneAt = Date.now();
         if (!quiet) {
           if (typeof Sounds !== 'undefined') Sounds.decodeTick();
           if (d.done < segs) addLog('Terminal: segment ' + d.done + ' of ' + segs + ' — ' + entry.title, 'log-lore');
@@ -283,6 +310,7 @@ var Engine = {
     var hints = DATA.veritasHints;
     var hint = hints[G.veritasHint.count % hints.length];
     G.veritasHint.count++;
+    if (typeof Sounds !== 'undefined') Sounds.veritasMotif(false);
     addLog('[VERITAS]: ' + hint.text, 'log-lore');
     if (hint.bonus) {
       var before = G.res[hint.bonus.resource] || 0;
@@ -301,6 +329,7 @@ var Engine = {
     var transmissions = DATA.veritasTransmissions;
     var t = transmissions[G.veritasTransmission.count % transmissions.length];
     G.veritasTransmission.count++;
+    if (typeof Sounds !== 'undefined') Sounds.veritasMotif(false);
     addLog('[VERITAS — PARTIAL TRANSMISSION]: ' + t.text, 'log-lore');
     if (t.bonus) {
       var before = G.res[t.bonus.resource] || 0;
@@ -338,6 +367,7 @@ var Engine = {
 function doScavenge() {
   if (Date.now() < G.scavenge.cooldownUntil) return;
   if (G.awakening || G.ending) return;
+  if (typeof Sounds !== 'undefined') Sounds.scavenge();
   if (!G.seeds.firstCache) {
     /* The first search finds the cache from Chapter Three: arranged, not fallen */
     G.seeds.firstCache = true;
@@ -374,6 +404,7 @@ function buyBuilding(id) {
 
   spendResources(cost);
   G.buildings[id] = count + 1;
+  if (typeof Sounds !== 'undefined') Sounds.build(id, count);
 
   if (count === 0) {
     addLog((bld.built || (bld.name + ' — installed.')), 'log-important');
@@ -478,5 +509,6 @@ function showNotification(msg, cls, duration) {
   el.className = 'notification ' + (cls || '');
   el.textContent = msg;
   area.appendChild(el);
+  if (typeof Sounds !== 'undefined' && !/notif-(lore|prestige|loot)/.test(cls || '')) Sounds.tick();
   setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, duration || 3100);
 }

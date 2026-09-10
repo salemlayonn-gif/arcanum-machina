@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 var G = {
-  version: '1.2.0',
+  version: '1.3.0',
   heroName: '',
   playTime: 0,
   lastSave: 0,
@@ -167,7 +167,11 @@ var G = {
 
   /* Transient scripted sequences (not saved) */
   awakening: null,
-  ending: null
+  ending: null,
+
+  /* Transient animation timestamps (not saved) */
+  relicFlashAt: 0,
+  nextRelicPulse: 0
 };
 
 /* ── STATE HELPERS ─────────────────────── */
@@ -357,6 +361,23 @@ function decodeSegmentSeconds() {
 function isLoreDecoded(id) {
   var d = G.decoding[id];
   return !d || !!d.complete;
+}
+
+/* Where the player is, for music and ambient: the zone being explored or fought in, else the Archive. */
+var ZONE_PLACE = {
+  overgrown_road: 'road', ruined_outpost: 'outpost', sunken_district: 'district', shattered_spire: 'spire',
+  deep_vault: 'vault', cathedral_of_first_light: 'cathedral', lattice_core: 'core'
+};
+function currentPlace() {
+  if (G.ending) return 'core';
+  if (G.awakening) return 'archive';
+  if (G.combat.active && G.combat.zoneId) return ZONE_PLACE[G.combat.zoneId] || 'archive';
+  if (G.explore.active && G.explore.zoneId) return ZONE_PLACE[G.explore.zoneId] || 'archive';
+  return 'archive';
+}
+
+function reducedMotion() {
+  try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch(e) { return false; }
 }
 
 /* A road, once walked, stays on the map — even if the resources that opened it are spent. */

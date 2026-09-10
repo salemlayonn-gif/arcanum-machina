@@ -95,6 +95,7 @@ var Combat = {
     }
 
     Combat.combatLog('Something moves on the road. ' + enemy.name + '.', 'cl-system');
+    if (enemyId === 'care_golem' && typeof Sounds !== 'undefined') Sounds.conversationOver();
     if (G.combat.modifier === 'tired') {
       Combat.combatLog('His arm is slow. He has been walking for days. He is exhausted.', 'cl-system');
     }
@@ -113,6 +114,7 @@ var Combat = {
     if (!s || !enemy) return;
     if (s.idx < s.lines.length) {
       Combat.combatLog(s.lines[s.idx], s.resolve === 'grant' ? 'cl-hero' : 'cl-system');
+      if (s.resolve === 'calm' && s.idx === 2 && enemy.id === 'care_golem' && typeof Sounds !== 'undefined') Sounds.conversationOver();
       s.idx++;
       return;
     }
@@ -156,6 +158,7 @@ var Combat = {
     if (crit) heroDmg = Math.floor(heroDmg * 1.8);
 
     G.combat.enemyHp -= heroDmg;
+    if (typeof Sounds !== 'undefined') Sounds.zap();
     Combat.combatLog('You strike for ' + heroDmg + '.' + (crit ? ' A clean hit.' : ''), 'cl-hero');
 
     if (G.combat.enemyHp <= 0) {
@@ -169,6 +172,7 @@ var Combat = {
       var golemBase = 6 + Math.floor(G.hero.level / 2);
       var golemDmg = Math.max(2, golemBase - Math.floor(enemyDef / 4) + Math.floor(Math.random() * 4));
       G.combat.enemyHp -= golemDmg;
+      if (typeof Sounds !== 'undefined') Sounds.clank();
       Combat.combatLog('The golem strikes for ' + golemDmg + '.', 'cl-hero');
     }
 
@@ -197,6 +201,8 @@ var Combat = {
         Combat.combatLog(enemy.name + ' ' + enemy.attackVerb + ' the shield. The golem absorbs ' + golemTankShield + '.', 'cl-hit');
       }
     } else {
+      G.combat.lastEnemyHitAt = Date.now();
+      if (typeof Sounds !== 'undefined') Sounds.hit();
       if (G.combat.golemHp > 0) {
         var golemTank = Math.floor(enemyDmg * 0.4);
         var heroTake  = enemyDmg - golemTank;

@@ -195,6 +195,7 @@ var Ending = {
         if (tt < due) break;
         e.idx = i;
         if (script[i].who === 'done') { e.phase = 'done'; return; }
+        if (i === 0 && typeof Sounds !== 'undefined') Sounds.veritasMotif(true);
         e.lines.push(script[i]);
       }
     }

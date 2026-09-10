@@ -192,6 +192,34 @@ is full of students. Architect Mode intentionally not built.
 
 ---
 
+## 4. Round two — animation, music, sound (v1.3.0, same day) — all ✅
+
+Suggested and implemented in this order: 18 → 1 + 2 → 9 → 14 + 11 → the rest.
+
+| # | Item | Where |
+|---|---|---|
+| 1 | The walls breathe (staggered CSS on lit sockets; ley-line wave) | `archivePanel` + `.pnl-lit` / `.pnl-ley` |
+| 2 | The relic pulses. Once. (random 45–160 s, log line, sub thump) | `Engine.checkRelicPulse`, `Sounds.relicPulse` |
+| 3 | Decoded segments type themselves in (40 chars/s) | `RENDER.typedSegments`, `d.lastDoneAt` |
+| 4 | The title surfaces from noise, bottom row first | `main.js animateTitle` |
+| 5 | Living zone art: water, sparks, wraiths, Care Golem eyes | `RENDER.liveArt` |
+| 6 | A newly reachable zone flickers on the map for 6 s | `RENDER.worldMap` (`_zoneSeen`) |
+| 7 | A figure walking the road; `☾` at night | `RENDER.roadProgress` |
+| 8 | The chord, visible (`▁▂▃▅▇` bar during the blaze) | `RENDER.chordBar` |
+| 9 | Adaptive layers — the Archive wakes, the music wakes | `Music.layersFor`, per-bar scheduler |
+| 10 | Place-dependent scoring (District / Spire / Vault / Cathedral / Core) | `Music.planFor` |
+| 11 | VERITAS has a motif (descending fifth; in full at "Hello") | `Sounds.veritasMotif` |
+| 12 | Combat ducks melody and arp, keeps bass and drums | `Music.planFor` |
+| 13 | After the ending the music becomes occasional | `Music.planFor` (`_phraseBars`) |
+| 14 | The sound that means the conversation is over | `Sounds.conversationOver` |
+| 15 | Building timbres; bench recognition on the first craft | `Sounds.build`, `Sounds.recognition` |
+| 16 | Ambient beds per place, crossfaded, paused when hidden | `Ambient` |
+| 17 | Dry combat foley + footsteps | `Sounds.zap/hit/clank/footsteps` |
+| 18 | Mixer in CONFIG (Master / Music / Ambient / Effects / mute) | `Mixer`, `screenConfig` |
+| 19 | `prefers-reduced-motion` respected (CSS and JS) | `reducedMotion()`, stylesheet |
+
+---
+
 ## 3. What was done in which order
 
 1. §1-A caps → economy sim → Ley Tap +300 / Beacon 4,000.

@@ -1030,6 +1030,39 @@ html[data-theme="parchment"] ::-webkit-scrollbar-thumb { background: var(--dim);
 /* ── COMBAT BACKDROP ───────────────────── */
 .combat-backdrop { color: var(--mana); opacity: 0.55; margin-top: -8px; }
 
+/* ── LIVING WALLS ──────────────────────── */
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; text-shadow: 0 0 3px var(--mana); }
+  50%      { opacity: 1;    text-shadow: 0 0 10px var(--mana); }
+}
+.pnl-lit { animation: breathe 4.2s ease-in-out infinite; }
+@keyframes leywave {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.8; }
+}
+.pnl-ley { color: var(--mana); animation: leywave 6s ease-in-out infinite; }
+.pnl-flash { color: var(--bright); text-shadow: 0 0 16px var(--gold), 0 0 4px var(--bright); }
+.chord-bar { white-space: pre; font-size: 0.9rem; letter-spacing: 1px; margin: 4px 0 0 3px; line-height: 1; }
+
+/* ── TYPING / ROAD ─────────────────────── */
+@keyframes blink { 50% { opacity: 0; } }
+.type-cursor { animation: blink 1s steps(1) infinite; color: var(--memory); }
+.road-line   { white-space: pre; color: var(--memory); font-size: 0.86rem; letter-spacing: 1px; }
+.road-night  { color: var(--dim); }
+
+/* ── MIXER ─────────────────────────────── */
+.mix-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.86rem; }
+.mix-row label { min-width: 84px; color: var(--dim); }
+.mix-row input[type=range] { width: 150px; cursor: pointer; }
+.mix-row .mix-val { min-width: 36px; color: var(--dim); font-size: 0.79rem; }
+
+/* ── REDUCED MOTION ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .pnl-lit, .pnl-ley, .type-cursor, .nav-btn.notify, .awakening-line, .prologue-fade,
+  .end-veritas, .end-hero, .end-pause, .end-note, .intro-title, .intro-subtitle, .intro-divider,
+  .intro-body, .intro-prompt { animation: none !important; }
+}
+
 /* ── RESPONSIVE ────────────────────────── */
 @media (max-width: 600px) {
   #game-container { padding: 12px; }

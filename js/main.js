@@ -49,6 +49,7 @@
         '</div>';
     }
     el.innerHTML = html;
+    if (prologueBeat < 0) animateTitle(el.querySelector('.intro-title'));
 
     setTimeout(function() {
       var input = document.getElementById('hero-name-input');
@@ -59,6 +60,29 @@
         });
       }
     }, 100);
+  }
+
+  /* The title surfaces from the earth: noise resolving into letters, bottom row first */
+  function animateTitle(pre) {
+    if (!pre || reducedMotion()) return;
+    var rows = pre.textContent.split('\n');
+    var glyphs = '▒░▓·';
+    var frames = 34, f = 0;
+    var timer = setInterval(function() {
+      f++;
+      var out = rows.map(function(row, r) {
+        var rowStart = (rows.length - 1 - r) * 4;
+        var chars = row.split('');
+        for (var c = 0; c < chars.length; c++) {
+          if (chars[c] === ' ') continue;
+          var jitter = (c * 7 + r * 13) % 6;
+          if (f < rowStart + jitter) chars[c] = glyphs[(c + f + r) % glyphs.length];
+        }
+        return chars.join('');
+      });
+      pre.textContent = out.join('\n');
+      if (f >= frames) { clearInterval(timer); pre.textContent = rows.join('\n'); }
+    }, 60);
   }
 
   window.prologueNext = function() { prologueBeat++; renderBeat(); };
@@ -87,7 +111,13 @@
   /* ── INIT ──────────────────────────────── */
   function init() {
     Settings.init();
+    Mixer.load();
     Music.loadPrefs();
+    /* Browsers gate audio behind a gesture; the first click or key opens it. Ambient pauses when the tab is hidden. */
+    var unlock = function() { Sounds.unlock(); };
+    document.addEventListener('click', unlock, { passive: true });
+    document.addEventListener('keydown', unlock, { passive: true });
+    document.addEventListener('visibilitychange', function() { Ambient.pause(document.hidden); });
     var saved = loadGame();
 
     if (saved && G.flags.introComplete) {
