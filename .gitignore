@@ -1,0 +1,22 @@
+# Claus i secrets: MAI al repositori
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+local.properties
+secrets.*
+credentials.*
+service-account*.json
+
+# Local / eines
+.claude/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
